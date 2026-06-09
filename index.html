@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Aeolian Islands — Snorkel & Natural-Feature Atlas</title>
-  <meta name="description" content="Interactive satellite map of snorkelable spots across the Aeolian Islands — sea caves, stacks, natural pools, thermal bubble fields and reefs, all under 20m and reachable by swimming from a moored catamaran." />
+  <title>Alonissos — Gardner's Guide</title>
+  <meta name="description" content="Gardner's personal guide to Alonissos — beaches, snorkel spots, cliff jumps, restaurants, bars and island day trips, for sailing and catamaran cruising in the Northern Sporades." />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -28,8 +28,8 @@
             <path d="M6 26 Q11 23 16 26 T26 26" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/>
           </svg>
           <div class="brand-text">
-            <h1>Eolie a Nuoto</h1>
-            <p>Snorkel &amp; natural-feature atlas · catamaran edition</p>
+            <h1>Gardner's Guide</h1>
+            <p>Alonissos &amp; the Sporades · catamaran edition</p>
           </div>
         </div>
         <button id="sb-toggle" class="sb-toggle" aria-label="Collapse sidebar" title="Collapse">‹</button>
@@ -77,8 +77,8 @@
         </section>
 
         <footer class="sb-footer">
-          <p>Every site is <strong>≤20 m</strong> and snorkelable — no scuba needed. Some coordinates are approximate; always check sea conditions and any local caution notes before swimming.</p>
-          <p class="src">Data: turismoeolie · UNESCO Smart Education Sicily · Navily · Smithsonian GVP · Sailogy &amp; charter skipper guides · travel blogs.</p>
+          <p>Every water site is <strong>≤20 m</strong> and snorkelable — no scuba needed. Some non-water sites (restaurants, bars, landmarks) are included as general travel tips. Always check sea conditions before swimming.</p>
+          <p class="src">Data: Gardner's personal guide to Alonissos, compiled from first-hand experience.</p>
         </footer>
       </div>
     </aside>
@@ -93,6 +93,23 @@
       <div id="prox-legend" class="prox-legend" hidden>
         <div class="pl-row"><span class="ring swim"></span> Easy swim from anchorage (&lt;400 m)</div>
         <div class="pl-row"><span class="ring tender"></span> Short tender ride (&lt;1.5 km)</div>
+      </div>
+
+      <!-- Drag-to-reposition banner (shown during drag mode) -->
+      <div id="drag-banner" class="drag-banner" hidden>
+        <div class="drag-banner-inner">
+          <div class="drag-banner-info">
+            <span class="drag-banner-icon">✥</span>
+            <div>
+              <div class="drag-banner-title">Repositioning <span id="drag-banner-name"></span></div>
+              <div class="drag-banner-coords" id="drag-coords">Drag the pin to its true location</div>
+            </div>
+          </div>
+          <div class="drag-banner-actions">
+            <button id="drag-cancel-btn" class="drag-action-btn cancel">Cancel</button>
+            <button id="drag-confirm-btn" class="drag-action-btn confirm" disabled>Confirm</button>
+          </div>
+        </div>
       </div>
     </main>
   </div>

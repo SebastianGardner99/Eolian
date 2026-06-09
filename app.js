@@ -1,5 +1,5 @@
 // ============================================================
-// Aeolian Islands — Snorkel & Natural-Feature Atlas
+// Alonissos — Gardner's Guide
 // Application logic (catamaran edition)
 // ============================================================
 
@@ -16,8 +16,8 @@ const state = {
 
 // ---- Map setup ----
 const map = L.map("map", {
-  center: [38.55, 14.92],
-  zoom: 11,
+  center: [39.20, 23.92],
+  zoom: 12,
   zoomControl: true,
   minZoom: 9,
   maxZoom: 18
@@ -41,14 +41,10 @@ const satellite = L.tileLayer(
   }
 ).addTo(map);
 
-// Labels overlay (place names) — placed in a dedicated pane that sits
-// ABOVE the markers so island/town names stay readable.
+// Labels overlay — sits above markers so place names stay readable
 map.createPane("labels");
-map.getPane("labels").style.zIndex = 650;            // above marker pane (600)
-map.getPane("labels").style.pointerEvents = "none"; // clicks pass through to markers
-// CartoDB dark-matter labels-only overlay: a much sparser place-name set
-// than the Esri reference tiles (only major towns/islands), designed to
-// sit over a dark basemap — far less label crowding on densely-named islands.
+map.getPane("labels").style.zIndex = 650;
+map.getPane("labels").style.pointerEvents = "none";
 const labels = L.tileLayer(
   "https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png",
   {
@@ -61,8 +57,6 @@ const labels = L.tileLayer(
 ).addTo(map);
 
 // ---- Layer groups ----
-// Sites use a cluster group so dense areas (Salina/Lipari/Vulcano) stay
-// readable at low zoom; clusters split apart as you zoom in.
 const siteLayer = L.markerClusterGroup({
   maxClusterRadius: 38,
   spiderfyOnMaxZoom: true,
@@ -79,7 +73,7 @@ const siteLayer = L.markerClusterGroup({
   }
 }).addTo(map);
 const anchorLayer = L.layerGroup().addTo(map);
-const routeLayer = L.layerGroup().addTo(map);
+const routeLayer  = L.layerGroup().addTo(map);
 const proximityLayer = L.layerGroup().addTo(map);
 
 // Keep marker refs by site id for list<->map interaction
@@ -97,7 +91,6 @@ function haversine(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Nearest anchorage + distance for a site
 function nearestAnchorage(site) {
   let best = null;
   for (const a of ANCHORAGES) {
@@ -107,11 +100,10 @@ function nearestAnchorage(site) {
   return best;
 }
 
-// Classify reachability from nearest anchorage
 function reachability(site) {
   const near = nearestAnchorage(site);
   if (!near) return { level: "none", near: null };
-  if (near.dist <= PROXIMITY.swim) return { level: "swim", near };
+  if (near.dist <= PROXIMITY.swim)   return { level: "swim",   near };
   if (near.dist <= PROXIMITY.tender) return { level: "tender", near };
   return { level: "none", near };
 }
@@ -124,22 +116,22 @@ const ACCESS_LABEL = { shore: "Shore entry", boat: "Anchor & swim" };
 
 // Precompute band + reachability for every site
 SITES.forEach((s) => {
-  s._band = bandFor(s.depth);
+  s._band  = bandFor(s.depth);
   s._reach = reachability(s);
 });
 
 // ---- Marker rendering ----
-function depthIcon(site) {
+function depthIcon(site, dragging = false) {
   const color = DEPTH_BANDS[site._band].color;
   const glyph = FEATURE_TYPES[site.type].glyph;
-  const size = 26;
+  const size  = 26;
   return L.divIcon({
     className: "",
-    html: `<div class="depth-marker" style="--mk:${color}">
+    html: `<div class="depth-marker${dragging ? " drag-active" : ""}" style="--mk:${color}">
              <span class="mk-glyph">${glyph}</span>
            </div>`,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
+    iconSize:    [size, size],
+    iconAnchor:  [size / 2, size / 2],
     popupAnchor: [0, -size / 2]
   });
 }
@@ -149,14 +141,14 @@ function chip(text, cls) {
 }
 
 function reachChip(reach) {
-  if (reach.level === "swim") return chip("Short swim", "reach");
-  if (reach.level === "tender") return chip("Tender ride", "reach");
+  if (reach.level === "swim")   return chip("Short swim",   "reach");
+  if (reach.level === "tender") return chip("Tender ride",  "reach");
   return "";
 }
 
 function popupHtml(site) {
   const band = DEPTH_BANDS[site._band];
-  const ft = FEATURE_TYPES[site.type];
+  const ft   = FEATURE_TYPES[site.type];
   return `<div class="pop">
     <h3>${site.name}</h3>
     <div class="pop-sub">${site.island} · ${site.depthText.split(/[;—]/)[0].trim()}</div>
@@ -176,7 +168,7 @@ function buildSiteMarkers() {
 
   SITES.forEach((site) => {
     const m = L.marker([site.lat, site.lng], {
-      icon: depthIcon(site),
+      icon:  depthIcon(site),
       title: site.name
     });
     m.bindPopup(popupHtml(site), { maxWidth: 280 });
@@ -193,7 +185,7 @@ function buildAnchorages() {
     const icon = L.divIcon({
       className: "",
       html: `<div class="anchor-icon">⚓</div>`,
-      iconSize: [18, 18],
+      iconSize:   [18, 18],
       iconAnchor: [9, 9]
     });
     const m = L.marker([a.lat, a.lng], { icon, title: a.name });
@@ -211,11 +203,11 @@ function buildRoutes() {
   routeLayer.clearLayers();
   BOAT_ROUTES.forEach((r) => {
     const line = L.polyline(r.points, {
-      color: r.color,
-      weight: 2.5,
-      opacity: 0.75,
+      color:     r.color,
+      weight:    2.5,
+      opacity:   0.75,
       dashArray: "1 7",
-      lineCap: "round"
+      lineCap:   "round"
     });
     line.bindTooltip(r.name, { sticky: true });
     routeLayer.addLayer(line);
@@ -253,10 +245,10 @@ function buildProximity(visibleSites) {
 
 // ---- Filtering ----
 function siteVisible(site) {
-  if (!state.depth[site._band]) return false;
-  if (!state.type.has(site.type)) return false;
+  if (!state.depth[site._band])                             return false;
+  if (!state.type.has(site.type))                           return false;
   if (state.access !== "all" && site.access !== state.access) return false;
-  if (state.reachableOnly && site._reach.level === "none") return false;
+  if (state.reachableOnly && site._reach.level === "none")  return false;
   return true;
 }
 
@@ -280,7 +272,6 @@ function applyFilters() {
 function renderList(visible) {
   const ul = document.getElementById("site-list");
   ul.innerHTML = "";
-  // group sort: by depth ascending, then name
   const sorted = [...visible].sort((a, b) =>
     (a.depth - b.depth) || a.name.localeCompare(b.name)
   );
@@ -290,14 +281,13 @@ function renderList(visible) {
     li.className = "site-li";
     li.style.borderLeftColor = DEPTH_BANDS[site._band].color;
     const reach =
-      site._reach.level === "swim" ? `<span class="reach">⊙ short swim</span>` :
+      site._reach.level === "swim"   ? `<span class="reach">⊙ short swim</span>`  :
       site._reach.level === "tender" ? `<span class="reach">⛵ tender ride</span>` : "";
     li.innerHTML = `<h3><span class="li-glyph">${ft.glyph}</span> ${site.name}</h3>
       <div class="meta"><span>${site.island}</span><span>${DEPTH_BANDS[site._band].label}</span>${reach}</div>`;
     li.addEventListener("click", () => {
       const m = markerById[site.id];
       if (m && siteLayer.hasLayer(m)) {
-        // zoomToShowLayer expands any cluster the marker sits in, then opens it
         siteLayer.zoomToShowLayer(m, () => m.openPopup());
       } else {
         map.flyTo([site.lat, site.lng], 14, { duration: 0.8 });
@@ -310,19 +300,171 @@ function renderList(visible) {
   }
 }
 
-// ---- Detail drawer ----
-let _draggableMarker = null;
+// ================================================================
+// ---- Drag-to-Reposition ----------------------------------------
+// ================================================================
+
+// Shared helper: update the in-memory dataset + marker after a coord change
+function commitNewCoords(site, lat, lng) {
+  site.lat   = lat;
+  site.lng   = lng;
+  site._reach = reachability(site);
+
+  const m = markerById[site.id];
+  if (m) {
+    m.setLatLng([lat, lng]);
+    m.setPopupContent(popupHtml(site));
+  }
+  applyFilters();
+}
+
+// Active drag state — kept outside closures so cancel can reach it
+let _dragState = null;
+
+function startDragMode(site) {
+  // Close any open popup first
+  map.closePopup();
+
+  const m = markerById[site.id];
+  if (!m) return;
+
+  // Make sure the marker is visible and remove from cluster temporarily
+  siteLayer.removeLayer(m);
+  m.addTo(map);
+
+  // Fly to the marker so it's centred
+  map.flyTo([site.lat, site.lng], Math.max(map.getZoom(), 15), { duration: 0.6 });
+
+  // Swap to a drag-active icon (pulsing ring via CSS)
+  m.setIcon(depthIcon(site, true));
+
+  // Enable Leaflet drag on the marker
+  m.dragging.enable();
+
+  // Show the drag banner overlay
+  const banner = document.getElementById("drag-banner");
+  const bannerName = document.getElementById("drag-banner-name");
+  bannerName.textContent = site.name;
+  banner.hidden = false;
+  requestAnimationFrame(() => banner.classList.add("visible"));
+
+  // Set cursor on the map container
+  document.getElementById("map").classList.add("drag-mode");
+
+  // Store state so cancel / confirm can clean up
+  _dragState = { site, marker: m };
+
+  // Live coord readout while dragging
+  m.on("drag", onMarkerDrag);
+  m.on("dragend", onMarkerDragEnd);
+}
+
+function onMarkerDrag(e) {
+  const { lat, lng } = e.target.getLatLng();
+  document.getElementById("drag-coords").textContent =
+    `${lat.toFixed(5)}°N  ${lng.toFixed(5)}°E`;
+}
+
+function onMarkerDragEnd(e) {
+  if (!_dragState) return;
+  const { lat, lng } = e.target.getLatLng();
+  document.getElementById("drag-coords").textContent =
+    `${lat.toFixed(5)}°N  ${lng.toFixed(5)}°E`;
+  // Enable the confirm button
+  document.getElementById("drag-confirm-btn").disabled = false;
+}
+
+function confirmDrag() {
+  if (!_dragState) return;
+  const { site, marker } = _dragState;
+  const { lat, lng } = marker.getLatLng();
+
+  // Commit to the dataset
+  commitNewCoords(site, lat, lng);
+  // Mark the site as no longer approximate now that user has placed it precisely
+  site.approx = false;
+
+  exitDragMode();
+
+  // Show a toast with copyable coordinates
+  showDragToast(site, lat, lng);
+}
+
+function cancelDrag() {
+  if (!_dragState) return;
+  const { site, marker } = _dragState;
+
+  // Snap the marker back to its original data coords
+  marker.setLatLng([site.lat, site.lng]);
+  exitDragMode();
+}
+
+function exitDragMode() {
+  if (!_dragState) return;
+  const { site, marker } = _dragState;
+
+  marker.dragging.disable();
+  marker.off("drag",    onMarkerDrag);
+  marker.off("dragend", onMarkerDragEnd);
+
+  // Restore normal icon
+  marker.setIcon(depthIcon(site, false));
+
+  // Move marker back into the cluster group
+  map.removeLayer(marker);
+  siteLayer.addLayer(marker);
+
+  // Hide banner
+  const banner = document.getElementById("drag-banner");
+  banner.classList.remove("visible");
+  setTimeout(() => { banner.hidden = true; }, 300);
+
+  // Remove drag cursor
+  document.getElementById("map").classList.remove("drag-mode");
+
+  // Reset confirm button
+  document.getElementById("drag-confirm-btn").disabled = true;
+  document.getElementById("drag-coords").textContent = "Drag the pin to its true location";
+
+  _dragState = null;
+}
+
+// Toast notification after a successful drag-commit
+function showDragToast(site, lat, lng) {
+  // Remove any existing toast
+  const old = document.getElementById("drag-toast");
+  if (old) old.remove();
+
+  const toast = document.createElement("div");
+  toast.id = "drag-toast";
+  toast.className = "drag-toast";
+  toast.innerHTML = `
+    <div class="drag-toast-title">📍 ${site.name}</div>
+    <div class="drag-toast-sub">Position updated. Copy new coords for data.js:</div>
+    <code class="drag-toast-coords" title="Click to select">${lat.toFixed(6)}, ${lng.toFixed(6)}</code>
+    <button class="drag-toast-close" onclick="this.parentElement.remove()">×</button>
+  `;
+  document.getElementById("map-wrap").appendChild(toast);
+
+  // Auto-dismiss after 12 s
+  setTimeout(() => {
+    if (toast.parentElement) {
+      toast.classList.add("fade-out");
+      setTimeout(() => toast.remove(), 400);
+    }
+  }, 12000);
+}
+
+// ================================================================
+// ---- Detail drawer ---------------------------------------------
+// ================================================================
 
 function openDrawer(id) {
-  if (_draggableMarker) {
-    _draggableMarker.dragging.disable();
-    _draggableMarker = null;
-  }
   const site = SITES.find((s) => s.id === id);
   if (!site) return;
   const band = DEPTH_BANDS[site._band];
-  const ft = FEATURE_TYPES[site.type];
-  const r = site._reach;
+  const ft   = FEATURE_TYPES[site.type];
+  const r    = site._reach;
 
   let proxHtml;
   if (r.level === "swim") {
@@ -362,19 +504,22 @@ function openDrawer(id) {
       <tr><th>Access</th><td>${accessText}<div class="d-anchor">Suggested anchorage / approach: <b>${site.anchorage}</b></div></td></tr>
       <tr><th>Notes</th><td>${site.notes}</td></tr>
       <tr><th>Coordinates</th><td>${site.lat.toFixed(4)}°N, ${site.lng.toFixed(4)}°E
-        ${site.approx ? '<div class="approx-flag">⚠ Approximate — derived from the cove/cape (±0.2–1 km)</div>' : '<div class="approx-flag" style="color:var(--swim)">Precise</div>'}</td></tr>
+        ${site.approx
+          ? '<div class="approx-flag">⚠ Approximate — derived from the cove/cape (±0.2–1 km)</div>'
+          : '<div class="approx-flag" style="color:var(--swim)">✓ Precise</div>'}</td></tr>
     </table>
 
     <div class="d-section-h">Sources</div>
     <ul class="d-sources">
       ${site.sources.map((s) => `<li><a href="${s[1]}" target="_blank" rel="noopener">${s[0]} ↗</a></li>`).join("")}
     </ul>
+
     ${site.approx ? `
-    <div class="d-section-h">GPS Update</div>
+    <div class="d-section-h">Adjust Position</div>
     <div class="d-gps">
-      <div class="gps-btns">
-        <button class="gps-btn" id="gps-update-btn">Set to Current GPS Location</button>
-        <button class="gps-btn" id="gps-drag-btn">Drag to Adjust</button>
+      <div class="gps-btn-row">
+        <button class="gps-btn" id="gps-update-btn">📍 Set to My GPS</button>
+        <button class="gps-btn drag-btn" id="drag-reposition-btn">✥ Drag to Reposition</button>
       </div>
       <div class="gps-output" id="gps-output" hidden></div>
     </div>` : ""}
@@ -382,64 +527,43 @@ function openDrawer(id) {
   document.getElementById("drawer-body").innerHTML = body;
 
   if (site.approx) {
-    const output = document.getElementById("gps-output");
-    const m = markerById[site.id];
-
+    // GPS button
     document.getElementById("gps-update-btn").addEventListener("click", function () {
-      const btn = this;
+      const btn    = this;
+      const output = document.getElementById("gps-output");
       btn.textContent = "Locating…";
-      btn.disabled = true;
+      btn.disabled    = true;
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
-          if (m) m.setLatLng([lat, lng]);
-          map.flyTo([lat, lng], Math.max(map.getZoom(), 16));
-          output.hidden = false;
+          commitNewCoords(site, lat, lng);
+          output.hidden    = false;
           output.className = "gps-output";
-          output.innerHTML = `<div class="gps-coords">New Coordinates (Copy for data.js):</div>
+          output.innerHTML = `<div class="gps-coords">New Coordinates (copy for data.js):</div>
             <code class="gps-value">${lat.toFixed(6)}, ${lng.toFixed(6)}</code>`;
-          btn.textContent = "Update Again";
-          btn.disabled = false;
+          btn.textContent = "📍 Update Again";
+          btn.disabled    = false;
         },
         (err) => {
           const msg = err.code === 1 ? "Location access denied — check browser permissions." :
                       err.code === 2 ? "Position unavailable — are you outdoors with signal?" :
-                      "Location request timed out. Try again.";
-          output.hidden = false;
+                                       "Location request timed out. Try again.";
+          output.hidden    = false;
           output.className = "gps-output gps-error-state";
           output.textContent = msg;
-          btn.textContent = "Set to Current GPS Location";
-          btn.disabled = false;
+          btn.textContent = "📍 Set to My GPS";
+          btn.disabled    = false;
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     });
 
-    const dragBtn = document.getElementById("gps-drag-btn");
-
-    function onMarkerDragEnd() {
-      const { lat, lng } = m.getLatLng();
-      output.hidden = false;
-      output.className = "gps-output";
-      output.innerHTML = `<div class="gps-coords">New Coordinates (Copy for data.js):</div>
-        <code class="gps-value">${lat.toFixed(6)}, ${lng.toFixed(6)}</code>`;
-    }
-
-    dragBtn.addEventListener("click", function () {
-      if (!m) return;
-      const active = dragBtn.classList.toggle("active");
-      if (active) {
-        _draggableMarker = m;
-        m.dragging.enable();
-        m.on("dragend", onMarkerDragEnd);
-        dragBtn.textContent = "Lock Position";
-      } else {
-        m.dragging.disable();
-        m.off("dragend", onMarkerDragEnd);
-        _draggableMarker = null;
-        dragBtn.textContent = "Drag to Adjust";
-      }
+    // Drag-to-reposition button: close drawer, enter drag mode
+    document.getElementById("drag-reposition-btn").addEventListener("click", () => {
+      closeDrawer();
+      // Short delay so the drawer finishes sliding out before we start drag mode
+      setTimeout(() => startDragMode(site), 420);
     });
   }
 
@@ -451,10 +575,6 @@ function openDrawer(id) {
 window.openDrawer = openDrawer;
 
 function closeDrawer() {
-  if (_draggableMarker) {
-    _draggableMarker.dragging.disable();
-    _draggableMarker = null;
-  }
   document.getElementById("drawer").classList.remove("open");
   const scrim = document.getElementById("drawer-scrim");
   scrim.classList.remove("show");
@@ -488,12 +608,11 @@ function labelForBand(key) {
 function buildTypeFilters() {
   const wrap = document.getElementById("type-filter");
   wrap.innerHTML = "";
-  // count sites per type so empty types can be hidden
   const counts = {};
   SITES.forEach((s) => { counts[s.type] = (counts[s.type] || 0) + 1; });
 
   Object.entries(FEATURE_TYPES).forEach(([key, ft]) => {
-    if (!counts[key]) return; // skip types with no sites
+    if (!counts[key]) return;
     const div = document.createElement("div");
     div.className = "type-chip";
     div.dataset.type = key;
@@ -513,7 +632,6 @@ function buildTypeFilters() {
     wrap.appendChild(div);
   });
 
-  // "All / None" quick controls
   const ctrls = document.createElement("div");
   ctrls.className = "type-ctrls";
   ctrls.innerHTML = `<button type="button" data-act="all">All</button>
@@ -525,14 +643,14 @@ function buildTypeFilters() {
     wrap.querySelectorAll(".type-chip").forEach((c) => {
       const key = c.dataset.type;
       if (on) { state.type.add(key); c.classList.remove("off"); }
-      else { state.type.delete(key); c.classList.add("off"); }
+      else    { state.type.delete(key); c.classList.add("off"); }
     });
     applyFilters();
   });
   wrap.appendChild(ctrls);
 }
 
-// ---- Wire up segmented controls (access only) ----
+// ---- Wire up segmented controls ----
 function wireSegments(containerId, key) {
   const c = document.getElementById(containerId);
   c.addEventListener("click", (e) => {
@@ -555,7 +673,6 @@ function init() {
 
   wireSegments("access-filter", "access");
 
-  // overlay toggles
   document.getElementById("tog-anchorages").addEventListener("change", (e) => {
     state.showAnchorages = e.target.checked;
     if (e.target.checked) anchorLayer.addTo(map); else map.removeLayer(anchorLayer);
@@ -574,7 +691,7 @@ function init() {
     applyFilters();
   });
 
-  // sidebar collapse
+  // Sidebar collapse
   document.getElementById("sb-toggle").addEventListener("click", () =>
     document.getElementById("app").classList.add("sb-collapsed")
   );
@@ -582,10 +699,19 @@ function init() {
     document.getElementById("app").classList.remove("sb-collapsed")
   );
 
-  // drawer close
+  // Drawer close
   document.getElementById("drawer-close").addEventListener("click", closeDrawer);
   document.getElementById("drawer-scrim").addEventListener("click", closeDrawer);
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      if (_dragState) { cancelDrag(); return; }
+      closeDrawer();
+    }
+  });
+
+  // Drag banner buttons
+  document.getElementById("drag-confirm-btn").addEventListener("click", confirmDrag);
+  document.getElementById("drag-cancel-btn").addEventListener("click", cancelDrag);
 
   applyFilters();
 }

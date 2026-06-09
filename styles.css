@@ -319,8 +319,6 @@ body {
 }
 .gps-btn:hover:not(:disabled) { background: rgba(94,224,198,.2); border-color: var(--shallow); }
 .gps-btn:disabled { opacity: .55; cursor: wait; }
-.gps-btn.active { background: rgba(94,224,198,.22); border-color: var(--shallow); }
-.gps-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
 .gps-output {
   margin-top: 10px; padding: 13px 15px;
@@ -350,3 +348,146 @@ body {
 @media (max-width: 820px) {
   #app.sb-collapsed #sidebar { margin-left: calc(var(--sb-w) * -1); }
 }
+
+/* ================================================================
+   Drag-to-reposition feature
+   ================================================================ */
+
+/* Two-button GPS row in the drawer */
+.gps-btn-row {
+  display: flex; gap: 8px;
+}
+.gps-btn-row .gps-btn {
+  flex: 1;
+}
+.drag-btn {
+  background: rgba(124,140,240,.12) !important;
+  border-color: rgba(124,140,240,.45) !important;
+  color: var(--deep-c) !important;
+}
+.drag-btn:hover:not(:disabled) {
+  background: rgba(124,140,240,.22) !important;
+  border-color: var(--deep-c) !important;
+}
+
+/* Drag-mode cursor on the map container */
+#map.drag-mode { cursor: crosshair !important; }
+#map.drag-mode .leaflet-interactive { cursor: grab !important; }
+#map.drag-mode .leaflet-interactive:active { cursor: grabbing !important; }
+
+/* Pulsing ring on the marker being dragged */
+.depth-marker.drag-active {
+  box-shadow:
+    0 0 0 4px rgba(124,140,240,.5),
+    0 0 0 8px rgba(124,140,240,.25),
+    0 4px 10px -2px rgba(0,0,0,.6);
+  animation: drag-pulse 1.2s ease-in-out infinite;
+  cursor: grab !important;
+}
+.depth-marker.drag-active:active { cursor: grabbing !important; }
+@keyframes drag-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(124,140,240,.5), 0 0 0 8px rgba(124,140,240,.2),  0 4px 10px -2px rgba(0,0,0,.6); }
+  50%       { box-shadow: 0 0 0 6px rgba(124,140,240,.7), 0 0 0 14px rgba(124,140,240,.1), 0 4px 10px -2px rgba(0,0,0,.6); }
+}
+
+/* Drag banner — floats above the map at the top */
+.drag-banner {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+  z-index: 900;
+  opacity: 0; transition: opacity .28s ease;
+  pointer-events: none;
+  width: max-content; max-width: calc(100vw - 28px);
+}
+.drag-banner.visible { opacity: 1; pointer-events: auto; }
+
+.drag-banner-inner {
+  display: flex; align-items: center; gap: 16px;
+  background: rgba(10,20,29,.92); backdrop-filter: blur(10px);
+  border: 1px solid var(--deep-c); border-radius: var(--r-lg);
+  padding: 12px 16px; box-shadow: 0 8px 32px -8px rgba(0,0,0,.7);
+  flex-wrap: wrap;
+}
+
+.drag-banner-info {
+  display: flex; align-items: center; gap: 12px;
+}
+.drag-banner-icon {
+  font-size: 1.4rem; color: var(--deep-c); flex: 0 0 auto;
+  animation: drag-pulse-icon 1.4s ease-in-out infinite;
+}
+@keyframes drag-pulse-icon {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: .55; }
+}
+
+.drag-banner-title {
+  font-size: .82rem; font-weight: 700; color: var(--ink);
+  white-space: nowrap;
+}
+.drag-banner-coords {
+  font-family: 'Courier New', monospace;
+  font-size: .75rem; color: var(--deep-c);
+  letter-spacing: .04em; margin-top: 3px;
+  min-width: 220px;
+}
+
+.drag-banner-actions { display: flex; gap: 8px; margin-left: auto; }
+
+.drag-action-btn {
+  font-family: inherit; font-size: .78rem; font-weight: 700;
+  padding: 7px 18px; border-radius: var(--r-sm);
+  cursor: pointer; transition: .15s; border: 1.5px solid;
+  letter-spacing: .02em;
+}
+.drag-action-btn.cancel {
+  background: transparent;
+  border-color: var(--ink-mute); color: var(--ink-dim);
+}
+.drag-action-btn.cancel:hover {
+  border-color: var(--ink); color: var(--ink);
+}
+.drag-action-btn.confirm {
+  background: rgba(124,140,240,.18);
+  border-color: var(--deep-c); color: var(--deep-c);
+}
+.drag-action-btn.confirm:hover:not(:disabled) {
+  background: rgba(124,140,240,.32);
+  color: var(--ink);
+}
+.drag-action-btn.confirm:disabled {
+  opacity: .38; cursor: not-allowed;
+}
+
+/* Drag result toast — bottom-left of map */
+.drag-toast {
+  position: absolute; bottom: 22px; left: 14px; z-index: 850;
+  background: rgba(10,20,29,.94); backdrop-filter: blur(10px);
+  border: 1px solid rgba(124,140,240,.5); border-radius: var(--r-md);
+  padding: 14px 36px 14px 16px; box-shadow: var(--shadow);
+  max-width: 300px;
+  animation: toast-in .25s ease;
+}
+.drag-toast.fade-out { animation: toast-out .4s ease forwards; }
+@keyframes toast-in  { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes toast-out { to   { opacity: 0; transform: translateY(10px); } }
+
+.drag-toast-title {
+  font-size: .82rem; font-weight: 700; color: var(--ink); margin-bottom: 4px;
+}
+.drag-toast-sub {
+  font-size: .74rem; color: var(--ink-dim); margin-bottom: 8px;
+}
+.drag-toast-coords {
+  display: block; font-family: 'Courier New', monospace;
+  font-size: .88rem; font-weight: 700; color: var(--deep-c);
+  letter-spacing: .04em; user-select: all;
+  background: var(--panel); border-radius: var(--r-sm);
+  padding: 6px 10px; cursor: text;
+}
+.drag-toast-close {
+  position: absolute; top: 8px; right: 10px;
+  background: none; border: none; color: var(--ink-mute);
+  font-size: 1.2rem; cursor: pointer; line-height: 1;
+  padding: 2px 4px;
+}
+.drag-toast-close:hover { color: var(--ink); }
