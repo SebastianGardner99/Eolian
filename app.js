@@ -24,6 +24,14 @@ const map = L.map("map", {
 });
 map.zoomControl.setPosition("topright");
 
+L.control.locate({
+  position: "topright",
+  flyTo: true,
+  keepCurrentZoomLevel: false,
+  locateOptions: { enableHighAccuracy: true, maxZoom: 16 },
+  strings: { title: "Show my location" }
+}).addTo(map);
+
 // Esri World Imagery (satellite) base
 const satellite = L.tileLayer(
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
