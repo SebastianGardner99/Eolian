@@ -363,8 +363,50 @@ function openDrawer(id) {
     <ul class="d-sources">
       ${site.sources.map((s) => `<li><a href="${s[1]}" target="_blank" rel="noopener">${s[0]} ↗</a></li>`).join("")}
     </ul>
+    ${site.approx ? `
+    <div class="d-section-h">GPS Update</div>
+    <div class="d-gps">
+      <button class="gps-btn" id="gps-update-btn">Set to Current GPS Location</button>
+      <div class="gps-output" id="gps-output" hidden></div>
+    </div>` : ""}
   `;
   document.getElementById("drawer-body").innerHTML = body;
+
+  if (site.approx) {
+    document.getElementById("gps-update-btn").addEventListener("click", function () {
+      const btn = this;
+      const output = document.getElementById("gps-output");
+      btn.textContent = "Locating…";
+      btn.disabled = true;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const m = markerById[site.id];
+          if (m) m.setLatLng([lat, lng]);
+          map.flyTo([lat, lng], Math.max(map.getZoom(), 16));
+          output.hidden = false;
+          output.className = "gps-output";
+          output.innerHTML = `<div class="gps-coords">New Coordinates (Copy for data.js):</div>
+            <code class="gps-value">${lat.toFixed(6)}, ${lng.toFixed(6)}</code>`;
+          btn.textContent = "Update Again";
+          btn.disabled = false;
+        },
+        (err) => {
+          const msg = err.code === 1 ? "Location access denied — check browser permissions." :
+                      err.code === 2 ? "Position unavailable — are you outdoors with signal?" :
+                      "Location request timed out. Try again.";
+          output.hidden = false;
+          output.className = "gps-output gps-error-state";
+          output.textContent = msg;
+          btn.textContent = "Set to Current GPS Location";
+          btn.disabled = false;
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
+  }
+
   document.getElementById("drawer").classList.add("open");
   const scrim = document.getElementById("drawer-scrim");
   scrim.hidden = false;
