@@ -319,6 +319,8 @@ body {
 }
 .gps-btn:hover:not(:disabled) { background: rgba(94,224,198,.2); border-color: var(--shallow); }
 .gps-btn:disabled { opacity: .55; cursor: wait; }
+.gps-btn.active { background: rgba(94,224,198,.22); border-color: var(--shallow); }
+.gps-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
 .gps-output {
   margin-top: 10px; padding: 13px 15px;

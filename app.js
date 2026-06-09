@@ -311,7 +311,13 @@ function renderList(visible) {
 }
 
 // ---- Detail drawer ----
+let _draggableMarker = null;
+
 function openDrawer(id) {
+  if (_draggableMarker) {
+    _draggableMarker.dragging.disable();
+    _draggableMarker = null;
+  }
   const site = SITES.find((s) => s.id === id);
   if (!site) return;
   const band = DEPTH_BANDS[site._band];
@@ -366,23 +372,27 @@ function openDrawer(id) {
     ${site.approx ? `
     <div class="d-section-h">GPS Update</div>
     <div class="d-gps">
-      <button class="gps-btn" id="gps-update-btn">Set to Current GPS Location</button>
+      <div class="gps-btns">
+        <button class="gps-btn" id="gps-update-btn">Set to Current GPS Location</button>
+        <button class="gps-btn" id="gps-drag-btn">Drag to Adjust</button>
+      </div>
       <div class="gps-output" id="gps-output" hidden></div>
     </div>` : ""}
   `;
   document.getElementById("drawer-body").innerHTML = body;
 
   if (site.approx) {
+    const output = document.getElementById("gps-output");
+    const m = markerById[site.id];
+
     document.getElementById("gps-update-btn").addEventListener("click", function () {
       const btn = this;
-      const output = document.getElementById("gps-output");
       btn.textContent = "Locating…";
       btn.disabled = true;
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
-          const m = markerById[site.id];
           if (m) m.setLatLng([lat, lng]);
           map.flyTo([lat, lng], Math.max(map.getZoom(), 16));
           output.hidden = false;
@@ -405,6 +415,32 @@ function openDrawer(id) {
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     });
+
+    const dragBtn = document.getElementById("gps-drag-btn");
+
+    function onMarkerDragEnd() {
+      const { lat, lng } = m.getLatLng();
+      output.hidden = false;
+      output.className = "gps-output";
+      output.innerHTML = `<div class="gps-coords">New Coordinates (Copy for data.js):</div>
+        <code class="gps-value">${lat.toFixed(6)}, ${lng.toFixed(6)}</code>`;
+    }
+
+    dragBtn.addEventListener("click", function () {
+      if (!m) return;
+      const active = dragBtn.classList.toggle("active");
+      if (active) {
+        _draggableMarker = m;
+        m.dragging.enable();
+        m.on("dragend", onMarkerDragEnd);
+        dragBtn.textContent = "Lock Position";
+      } else {
+        m.dragging.disable();
+        m.off("dragend", onMarkerDragEnd);
+        _draggableMarker = null;
+        dragBtn.textContent = "Drag to Adjust";
+      }
+    });
   }
 
   document.getElementById("drawer").classList.add("open");
@@ -415,6 +451,10 @@ function openDrawer(id) {
 window.openDrawer = openDrawer;
 
 function closeDrawer() {
+  if (_draggableMarker) {
+    _draggableMarker.dragging.disable();
+    _draggableMarker = null;
+  }
   document.getElementById("drawer").classList.remove("open");
   const scrim = document.getElementById("drawer-scrim");
   scrim.classList.remove("show");
