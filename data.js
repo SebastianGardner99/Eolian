@@ -36,300 +36,250 @@ const FEATURE_TYPES = {
 
 // Access model: shore = walk-in possible; boat = anchor & swim only.
 const SITES = [
+  // ---------------- PANAREA ----------------
+  {
+    id: "cala-junco", name: "Cala Junco", island: "Panarea",
+    lat: 38.625685, lng: 15.063242, approx: false,
+    type: "cove_snorkel", depth: 8, depthText: "5–12 m — volcanic basalt seabed",
+    access: "shore", anchorage: "Outside the cove in 5–10 m sand; swim in",
+    see: "Volcanic amphitheatre of dark basalt forming a natural pool; dense sea bream and wrasse; octopus and moray eels; exceptional underwater light.",
+    notes: "30-min walk from San Pietro pier. Go before 9am or after 5pm to beat crowds. No restrictions; enter by swimming only — no boat entry.",
+    desc: "The jewel of Panarea — a volcanic amphitheatre bay with emerald water over a stony seabed and some of the best snorkelling in the archipelago.",
+    sources: [["turismoeolie — Boating Panarea", "http://aeolianislands.turismoeolie.com/boating-panarea/"], ["Lonely Planet — Cala Junco", "https://www.lonelyplanet.com/italy/sicily/panarea/attractions/cala-junco/a/poi-sig/1397095/359996"]]
+  },
+  {
+    id: "cala-zimmari", name: "Cala Zimmari", island: "Panarea",
+    lat: 38.628801, lng: 15.066016, approx: false,
+    type: "beach_snorkel", depth: 5, depthText: "3–8 m — distinctive red sand",
+    access: "shore", anchorage: "Just off the beach in 5–8 m",
+    see: "Distinctive red volcanic sand; calm sheltered water; sea bream and wrasse; easy entry for snorkelling over sandy seabed.",
+    notes: "Only sandy beach on Panarea. 20-min walk from San Pietro port. No restrictions.",
+    desc: "Panarea's only sandy beach — distinctive red volcanic sand, calm sheltered water and easy snorkelling, 20 minutes' walk from the port.",
+    sources: [["turismoeolie — What to see at Panarea", "http://aeolianislands.turismoeolie.com/what-to-see-at-panarea/"], ["Lonely Planet — Panarea", "https://www.lonelyplanet.com/italy/sicily/panarea"]]
+  },
+  {
+    id: "calcara-fumaroles", name: "Spiaggia della Calcara", island: "Panarea",
+    lat: 38.645653, lng: 15.074647, approx: false,
+    type: "thermal_bubble", depth: 2, depthText: "0–3 m — shore fumaroles",
+    access: "shore", anchorage: "Ditella dock / Panarea Nord buoy field",
+    see: "Volcanic gases bubbling up through the seabed and rock cracks; hot steam venting from beach fissures; eerie and unique.",
+    notes: "Active fumarole beach — 20-min walk from San Pietro towards Ditella. Don't dig into vent sediment or touch vent centres.",
+    desc: "An active fumarole beach where volcanic gases bubble up through the seabed and rock cracks — eerie and unique, 20 minutes from San Pietro.",
+    sources: [["turismoeolie — What to see at Panarea", "http://aeolianislands.turismoeolie.com/what-to-see-at-panarea/"], ["Smithsonian GVP — Panarea", "https://volcano.si.edu/showreport.cfm?doi=10.5479%2Fsi.GVP.BGVN200210-211041"]]
+  },
+
+  // ---------------- PANAREA ISLETS ----------------
+  {
+    id: "lisca-bianca-bottaro", name: "Lisca Bianca / Bottaro Fumaroles", island: "Panarea islets",
+    lat: 38.637000, lng: 15.082000, approx: true,
+    type: "thermal_bubble", depth: 9, depthText: "5–13 m — volcanic gas vents",
+    access: "boat", anchorage: "Between the two islets (5–13 m sand)",
+    see: "Volcanic CO₂ vents bubbling vigorously from the sandy seabed; milky water near vent centres; the Grotta degli Innamorati (Lovers' Arch) swim-through on Lisca Bianca.",
+    notes: "Anchor between the two islets. No landing on either. Limit time at vent centres. Gas caution: sulphur present.",
+    desc: "The most spectacular underwater fumarole field in the archipelago — CO₂ vents cascade bubbles between two islets, plus a Lovers' Arch swim-through.",
+    sources: [["UNESCO Smart Education — Lisca Bianca", "https://www.smarteducationunescosicilia.it/en/isole-eolie/the-underwater-fumarolic-activity-of-lisca-bianca/"], ["turismoeolie — Boating Panarea", "http://aeolianislands.turismoeolie.com/boating-panarea/"]]
+  },
+  {
+    id: "dattilo", name: "Dattilo", island: "Panarea islets",
+    lat: 38.637000, lng: 15.077000, approx: true,
+    type: "stack", depth: 10, depthText: "5–15 m — volcanic rock formations",
+    access: "boat", anchorage: "Off the east coast (5–13 m sand)",
+    see: "Tall narrow volcanic islet; interesting rock formations and cave passages below the waterline; colourful sponges and algae in clear water.",
+    notes: "No landing; navigate carefully around shallow rocks. Best combined with Lisca Bianca in a single boat day.",
+    desc: "A tall narrow volcanic islet east of San Pietro with rock formations below the waterline — best combined with Lisca Bianca fumaroles in one day.",
+    sources: [["turismoeolie — Boating Panarea", "http://aeolianislands.turismoeolie.com/boating-panarea/"], ["GetYourGuide — Aeolian water sports", "https://www.getyourguide.com/aeolian-islands-l3446/water-sports-tc55/"]]
+  },
+  {
+    id: "basiluzzo", name: "Basiluzzo", island: "Panarea islets",
+    lat: 38.663690, lng: 15.113470, approx: false,
+    type: "shallow_archaeology", depth: 7.5, depthText: "7.5 m — Roman navalia ruins",
+    access: "boat", anchorage: "East coast (9–14 m sand/stone)",
+    see: "Roman boathouse (navalia) ruins at 7.5 m encrusted with gorgonians and sponges; visible from the surface on calm days; sheer cliffs above emerald water.",
+    notes: "Uninhabited volcanic islet. Landing on the east beach only — path is landslide-prone. No formal dive ban on surrounding water.",
+    desc: "Uninhabited volcanic islet with Roman ruins and an ancient boat-house visible on the seabed at 7.5 m — the only snorkelable Roman archaeology in the archipelago.",
+    sources: [["turismoeolie — Boating Panarea", "http://aeolianislands.turismoeolie.com/boating-panarea/"], ["GetYourGuide — Aeolian water sports", "https://www.getyourguide.com/aeolian-islands-l3446/water-sports-tc55/"]]
+  },
+
   // ---------------- LIPARI ----------------
   {
-    id: "spiaggia-bianca", name: "Spiaggia Bianca (Pumice White Beach)", island: "Lipari",
-    lat: 38.510, lng: 14.966, approx: true,
-    type: "beach_snorkel", depth: 8, depthText: "5–10 m — white pumice seabed",
-    access: "shore", anchorage: "Porticello / Canneto bay",
-    see: "Brilliant white pumice-powder seabed turning the water vivid turquoise; old quarry loading pontoons to swim around; mullet and sea bream; water slightly warm from residual pumice.",
-    notes: "Free public beach, no restrictions. Reachable on foot from Canneto or by boat.",
-    desc: "The most distinctively coloured snorkel spot in Lipari, where centuries of pumice quarrying left a ghostly white seabed glowing through turquoise water.",
+    id: "spiaggia-asino", name: "Spiaggia dell'Asino", island: "Lipari",
+    lat: 38.370390, lng: 14.997942, approx: false,
+    type: "cove_snorkel", depth: 8, depthText: "5–12 m — rocky seabed under black cliffs",
+    access: "shore", anchorage: "Off the cove in 8–14 m",
+    see: "Crystal-clear water over a rocky volcanic seabed under black cliffs; sea bream and wrasse; extraordinary isolation for a Lipari beach.",
+    notes: "200m steep descent on foot or water taxi from Lipari town. No restrictions.",
+    desc: "A secluded cove under black cliffs on Lipari's SW shore — crystal-clear water over a rocky seabed, reachable on foot (steep descent) or by water taxi.",
     sources: [["Sailogy — Best Shores in Lipari", "https://www.sailogy.com/en/blog/the-best-shores-in-lipari/"], ["sicilia.info — Lipari", "https://www.sicilia.info/en/aeolian-islands/lipari/"]]
   },
   {
-    id: "praia-vinci", name: "Spiaggia Praia di Vinci", island: "Lipari",
-    lat: 38.440, lng: 14.940, approx: true,
-    type: "cove_snorkel", depth: 12, depthText: "8–15 m — clear sandy bottom",
-    access: "boat", anchorage: "Off the beach in 8–15 m sand",
-    see: "Sandy/pebbly seabed in exceptional visibility, posidonia meadows, sea bream and mullet, a volcanic rock wall to the north; the Faraglioni stacks and Vulcano's crater frame the horizon.",
-    notes: "No restrictions; reachable only by boat — no land access.",
-    desc: "An unspoilt sandy cove at Lipari's south tip, reachable only by sea, with crystal-clear water and the Faraglioni towering nearby.",
-    sources: [["Sailogy — Best Shores in Lipari", "https://www.sailogy.com/en/blog/the-best-shores-in-lipari/"], ["SailScanner — Aeolian Islands", "https://sailscanner.ai/destinations/mediterranean/sailing-in-italy/sailing-in-the-aeolian-islands/"]]
-  },
-  {
-    id: "faraglioni-lipari", name: "Faraglioni di Lipari (Pietra Lunga & Menalda)", island: "Lipari",
-    lat: 38.435, lng: 14.930, approx: true,
-    type: "stack", depth: 12, depthText: "5–15 m around the bases",
-    access: "boat", anchorage: "Praia di Vinci (8–15 m sand)",
-    see: "Two basalt sea stacks rising from the strait; bases encrusted with sponges and gorgonians; wrasse, blennies and sea bream in the crevices; dramatic upward views to the columns.",
-    notes: "No landing on the stacks; channel current can be strong — assess from the boat.",
-    desc: "Pietra Lunga and Pietra Menalda are among the most photogenic formations in the archipelago; snorkelling their bases reveals rich encrustation and volcanic boulder topography.",
-    sources: [["GetYourGuide — Faraglioni di Lipari", "https://www.getyourguide.com/faraglioni-di-lipari-l203482/"], ["Airial Travel — Pietra Lunga & Menalda", "https://airial.travel/attractions/italy/faraglioni-pietra-lunga-and-menalda-PNKJ1TZi"]]
-  },
-  {
-    id: "arco-angeli", name: "Arco degli Angeli & Valle Muria", island: "Lipari",
-    lat: 38.453, lng: 14.903, approx: true,
-    type: "arch", depth: 9, depthText: "5–12 m, sand & boulders",
-    access: "boat", anchorage: "Valle Muria bay (8–15 m sand)",
-    see: "A volcanic rock arch at water level; red/orange/black coloured walls; small caves and tunnels; gorgonians on the rock; the arch frames the open sea.",
-    notes: "No restrictions; exposed west coast — calm weather essential.",
-    desc: "Lipari's wild west coast, where the Arco degli Angeli natural arch — 'coloured walls, countless caves and passages' — is accessible only by sea.",
+    id: "valle-muria", name: "Valle Muria", island: "Lipari",
+    lat: 38.460500, lng: 14.933837, approx: false,
+    type: "beach_snorkel", depth: 5, depthText: "0–8 m — dark volcanic sand and tuff caves",
+    access: "shore", anchorage: "Valle Muria bay (8–15 m sand)",
+    see: "Dark volcanic beach flanked by Pietra Lunga and Pietra Menalda sea stacks; fumaroles; small tuff caves to explore; extraordinary volcanic geology.",
+    notes: "25-min hike from Quattrocchi viewpoint. Confirm land access before visiting — path intermittently closed. Boat access always reliable.",
+    desc: "A dark volcanic beach between two iconic sea stacks on Lipari's wild west coast, with fumaroles and tuff caves to snorkel.",
     sources: [["Sailogy — Best Shores in Lipari", "https://www.sailogy.com/en/blog/the-best-shores-in-lipari/"], ["GetYourGuide — Aeolian snorkeling", "https://www.getyourguide.com/aeolian-islands-l3446/snorkeling-tc57/"]]
+  },
+  {
+    id: "pumice-canyon", name: "Pumice Canyon (Punta Castagna)", island: "Lipari",
+    lat: 38.512566, lng: 14.959444, approx: false,
+    type: "beach_snorkel", depth: 8, depthText: "5–12 m — white pumice seabed",
+    access: "shore", anchorage: "Porticello / Canneto bay",
+    see: "White pumice cliffs meeting vivid blue sea near Porticello; otherworldly contrast; white pumice seabed shimmering below; viewable from both land and sea.",
+    notes: "Walk from Porticello or approach by boat. No restrictions.",
+    desc: "White pumice cliffs meeting vivid blue sea near Porticello — an otherworldly contrast you can explore by snorkelling along the pumice seabed.",
+    sources: [["Sailogy — Best Shores in Lipari", "https://www.sailogy.com/en/blog/the-best-shores-in-lipari/"], ["turismoeolie — Lipari", "http://aeolianislands.turismoeolie.com/boating-lipari/"]]
   },
 
   // ---------------- VULCANO ----------------
   {
-    id: "acque-calde", name: "Acque Calde (Spiaggia delle Fumarole)", island: "Vulcano",
-    lat: 38.408, lng: 14.970, approx: true,
-    type: "thermal_bubble", depth: 2, depthText: "0–3 m — wade in / surface vents",
+    id: "acque-calde", name: "Acque Calde (Fumarole Beach)", island: "Vulcano",
+    lat: 38.417609, lng: 14.959443, approx: false,
+    type: "thermal_bubble", depth: 2, depthText: "0–3 m — volcanic fumaroles from below",
     access: "shore", anchorage: "Porto di Levante (5–6 m sand/mud)",
-    see: "Curtains of CO₂ and sulphur bubbles rising from the seabed metres from your feet — a natural jacuzzi; milky-turquoise warm water near vents; black sand.",
-    notes: "Wear reef shoes — water near vent centres can be very hot; don't put your face under (sulphur). Mud-bath pool intermittently closed since 2020; the beach vents stay open. Free.",
-    desc: "One of the easiest and most surreal thermal snorkels in the Mediterranean: wade into Baia di Levante amid a continuous curtain of volcanic bubbles. Best at dawn.",
-    sources: [["HotSpringsGuides — Vulcano", "https://www.hotspringsguides.com/hot-springs/thermal-springs-vulcano-island-italy"], ["Tripadvisor — Acque Calde", "https://www.tripadvisor.com/Attraction_Review-g642173-d21169876-Reviews-Spiaggia_delle_Acque_Calde-Isola_Vulcano_Aeolian_Islands_Islands_of_Sicily_Sicil.html"]]
+    see: "Volcanic fumaroles heating the sea from below; milky-coloured water near shore; curtains of CO₂ bubbles rising from the black sand seabed.",
+    notes: "Do not wear silver jewellery — it tarnishes instantly. Water near vent centres can be very hot. Easy walk from Porto Levante. Free.",
+    desc: "Volcanic fumaroles heat the sea from below at this otherworldly black-sand beach — a natural warm jacuzzi a short walk from Porto Levante.",
+    sources: [["HotSpringsGuides — Vulcano", "https://www.hotspringsguides.com/hot-springs/thermal-springs-vulcano-island-italy"], ["Tripadvisor — Acque Calde", "https://www.tripadvisor.com/Attraction_Review-g642173-d21169876-Reviews-Spiaggia_delle_Acque_Calde-Isola_Vulcano_Aeolian_Islands_Islands_of_Sicily_Sicily.html"]]
   },
   {
-    id: "grotta-cavallo", name: "Grotta del Cavallo & Piscina di Venere", island: "Vulcano",
-    lat: 38.393, lng: 14.942, approx: true,
-    type: "sea_cave", depth: 5, depthText: "2–8 m in cave & pool",
-    access: "boat", anchorage: "Bay to the south (5–12 m sand)",
-    see: "A three-entrance sea cave with stalactites and dome vaults flooding with azure light; next door the Piscina di Venere — a vivid emerald natural lava pool, extraordinarily shallow.",
-    notes: "Boat access only; exposed west coast, calm weather advised. Some safety notices on the pool — assess locally; tours routinely stop here.",
-    desc: "The finest sea-cave + natural-pool combination in the archipelago: azure cave light beside a picture-perfect emerald lava swimming hole.",
+    id: "grotta-cavallo", name: "Grotta del Cavallo", island: "Vulcano",
+    lat: 38.402622, lng: 14.939964, approx: false,
+    type: "sea_cave", depth: 5, depthText: "2–8 m in cave",
+    access: "boat", anchorage: "Bay south of the cave (5–12 m sand)",
+    see: "Spectacular sea cave on Vulcano's NW coast; light refracts through a natural siphon creating dazzling colour effects; adjacent to the Piscina di Venere.",
+    notes: "Depart from Porto Levante or Spiagge Nere. Exposed west coast — calm weather essential. Boat only.",
+    desc: "A spectacular sea cave on Vulcano's NW coast where light refracts through a natural siphon, creating dazzling colour effects — adjacent to the Piscina di Venere.",
     sources: [["Loveolie — Grotta del Cavallo", "https://www.loveolie.com/en/attractions/mare-eolie/grotta-del-cavallo"], ["Tripadvisor — Piscina di Venere", "https://www.tripadvisor.com/Attraction_Review-g642173-d17727014-Reviews-Piscina_Di_Venere-Isola_Vulcano_Aeolian_Islands_Islands_of_Sicily_Sicily.html"]]
   },
   {
-    id: "grotta-lavica", name: "Grotta Lavica (Blue Grotto)", island: "Vulcano",
-    lat: 38.397, lng: 14.983, approx: true,
-    type: "sea_cave", depth: 3, depthText: "0–5 m — enter at surface",
-    access: "boat", anchorage: "Porto di Levante / dinghy from sea",
-    see: "A lava-formed sea cave glowing blue-turquoise from light entering below the waterline; walls encrusted with red and orange algae.",
-    notes: "Dinghy access, calm seas required. No formal restrictions noted.",
-    desc: "Vulcano's 'blue grotto': a lava sea cave on the east coast where submarine light turns the interior a glowing blue. Often paired with Grotta del Cavallo.",
-    sources: [["GetYourGuide — Lipari & Vulcano snorkel", "https://www.getyourguide.com/lipari-l108622/snorkeling-tc57/"]]
+    id: "piscina-venere", name: "Piscina di Venere (Venus Pool)", island: "Vulcano",
+    lat: 38.402900, lng: 14.938000, approx: true,
+    type: "natural_pool", depth: 3, depthText: "1–5 m — completely enclosed rock pool",
+    access: "boat", anchorage: "Bay south of the caves (5–12 m sand)",
+    see: "A natural tuff-and-basalt rock pool completely enclosed from the sea; extraordinary turquoise colour; one of Italy's most beautiful natural pools.",
+    notes: "Boat access only from Porto Levante or Spiagge Nere. Calm weather essential on this exposed west coast.",
+    desc: "One of Italy's most beautiful natural pools — a completely enclosed turquoise rock pool of tuff and basalt on Vulcano's wild NW coast.",
+    sources: [["Tripadvisor — Piscina di Venere", "https://www.tripadvisor.com/Attraction_Review-g642173-d17727014-Reviews-Piscina_Di_Venere-Isola_Vulcano_Aeolian_Islands_Islands_of_Sicily_Sicily.html"], ["Loveolie — Grotta del Cavallo", "https://www.loveolie.com/en/attractions/mare-eolie/grotta-del-cavallo"]]
+  },
+  {
+    id: "spiaggia-gelso", name: "Spiaggia di Gelso", island: "Vulcano",
+    lat: 38.369544, lng: 14.994758, approx: false,
+    type: "beach_snorkel", depth: 8, depthText: "5–15 m — drops quickly to vivid blue",
+    access: "shore", anchorage: "Gelso (12–18 m off beach)",
+    see: "Black volcanic sand dropping quickly to vivid blue depths; large grouper and sea bream; far fewer crowds than Vulcano's north coast.",
+    notes: "Remote — spectacular drive across the island or boat from Porto Levante. No restrictions.",
+    desc: "A remote black-sand beach on Vulcano's southern tip where the seabed drops quickly to vivid blue — far fewer crowds than the north.",
+    sources: [["sicilia.info — Vulcano", "https://www.sicilia.info/en/aeolian-islands/vulcano/"], ["Sailogy — Aeolian anchorages", "https://www.sailogy.com/en/blog/yacht-rental-aeolian-islands/"]]
   },
 
   // ---------------- SALINA ----------------
   {
-    id: "pollara", name: "Pollara Bay (snorkel inside a crater)", island: "Salina",
-    lat: 38.5800, lng: 14.8047, approx: false,
-    type: "cove_snorkel", depth: 8, depthText: "5–10 m, rock & sand",
+    id: "pollara", name: "Pollara Bay", island: "Salina",
+    lat: 38.579933, lng: 14.807069, approx: false,
+    type: "cove_snorkel", depth: 8, depthText: "5–10 m — submerged crater walls",
     access: "shore", anchorage: "Between Punta Perciato & the Faraglione (5–10 m)",
-    see: "The submerged half of an ancient volcanic crater — unusual lava-rock topography; posidonia on sand patches; octopus and moray eels; the Il Postino filmset cliffs above.",
-    notes: "Free public anchorage, open to W/NW swell — fair-weather only. Path down from Pollara village.",
-    desc: "Snorkel literally inside the remains of a collapsed prehistoric volcano, with dramatic vertical crater walls above matched by lava formations below.",
+    see: "Submerged volcanic crater topography; volcanic sconcassi gas seeps; Il Postino filmset cliffs above; swim right to reach the Arco del Perciato sea arch.",
+    notes: "150 steps down from Pollara village. Exposed to W/NW swell — fair-weather only. Richest underwater landscape on Salina.",
+    desc: "Il Postino beach inside a collapsed volcanic crater — Salina's richest underwater landscape, with submerged crater walls and volcanic gas seeps.",
     sources: [["Navily — Spiaggia della Pollara", "https://www.navily.com/mouillage/spiaggia-della-pollara/7621"], ["turismoeolie — Boating Salina", "http://aeolianislands.turismoeolie.com/boating-salina/"]]
   },
   {
-    id: "punta-perciato-salina", name: "Punta Perciato — Natural Arch", island: "Salina",
-    lat: 38.585, lng: 14.802, approx: true,
-    type: "arch", depth: 2, depthText: "1–3 m at the arch base",
+    id: "arco-perciato", name: "Arco del Perciato", island: "Salina",
+    lat: 38.582725, lng: 14.806819, approx: false,
+    type: "arch", depth: 2, depthText: "1–3 m at arch base",
     access: "boat", anchorage: "Pollara Bay (immediately south)",
-    see: "A sea-sculpted volcanic arch at sea level — once big enough for small boats to pass through; algae and anemones on the base; frames Pollara Bay behind.",
-    notes: "Boat/kayak only; a recent rockfall reduced clearance — check locally.",
-    desc: "Salina's most iconic coastal feature, a volcanic gateway at the NW tip; reaching it by kayak or dinghy from Pollara and swimming through is unforgettable.",
+    see: "Dramatic lava arch at water level; algae and anemones on the base; frames Pollara Bay behind; swimmable from the beach.",
+    notes: "Reachable from the Balate steps or by boat from Pollara Bay. A recent rockfall may have reduced clearance — check locally.",
+    desc: "A dramatic lava arch at the north end of Pollara Bay — swimmable and reachable from the Balate steps or by dinghy from the anchorage.",
     sources: [["Tripadvisor — Arco di Punta Perciato", "https://www.tripadvisor.com/Attraction_Review-g12161917-d18148393-Reviews-Arco_Naturale_DI_Punta_Perciato-Pollara_Malfa_Isola_di_Salina_Aeolian_Islands_.html"], ["Mammasantina — Salina by boat", "https://mammasantina.it/en/salina-aeolian-islands/around-the-salina-by-boat.html"]]
   },
   {
-    id: "scoglio-cacato", name: "Scoglio Cacato", island: "Salina",
-    lat: 38.558, lng: 14.878, approx: true,
-    type: "reef_secca", depth: 7, depthText: "3–10 m volcanic reef",
-    access: "boat", anchorage: "Santa Marina Salina (8–12 m)",
-    see: "Dramatic volcanic rock formations in very clear water; sponges, anemones and posidonia on the base.",
-    notes: "Free, no restrictions. Steep approach from land — boat recommended.",
-    desc: "A small striking rock outcrop just north of Santa Marina where the volcanic geology is unusually visible and the water especially clear — a rewarding stop most visitors skip.",
+    id: "spiaggia-rinella", name: "Spiaggia di Rinella", island: "Salina",
+    lat: 38.547960, lng: 14.829794, approx: false,
+    type: "beach_snorkel", depth: 8, depthText: "5–12 m — large fish in good visibility",
+    access: "shore", anchorage: "Rinella anchorage (8–12 m off beach)",
+    see: "Black pebble seabed; large grouper and sea bream to the left of the beach; good visibility; locals' favourite.",
+    notes: "Most accessible beach on Salina's south coast. Black-pebble — bring reef shoes. No restrictions.",
+    desc: "Salina's most accessible beach — a locals' favourite on the south coast with good snorkelling to the left of the beach and large fish.",
     sources: [["turismoeolie — Boating Salina", "http://aeolianislands.turismoeolie.com/boating-salina/"], ["Sailogy — Aeolian anchorages", "https://www.sailogy.com/en/blog/yacht-rental-aeolian-islands/"]]
-  },
-  {
-    id: "malfa-reef", name: "Malfa Reef Shoals", island: "Salina",
-    lat: 38.573, lng: 14.838, approx: true,
-    type: "reef_secca", depth: 16, depthText: "Surface rocks → 12–20 m outer edge",
-    access: "shore", anchorage: "Malfa (anchor with care — reef hazard)",
-    see: "Moray eels and octopus, dense fish shoals, 18–20 m free-dive depth on the outer edge; rocks break the surface in places.",
-    notes: "Free; the reef is a boat hazard — snorkellers approach from Malfa beach (~100 m swim).",
-    desc: "A submerged reef under 100 m from Malfa's beach, with surface-breaking rocks creating a rich habitat — one blogger logged morays, octopus and dense shoals in glass-clear water.",
-    sources: [["Belosophy — Malfa, Salina", "https://belosophy.wordpress.com/2015/07/26/a-great-beach-and-a-terrific-cafe-at-malfa-salina-italy/"]]
-  },
-
-  // ---------------- PANAREA & ISLETS ----------------
-  {
-    id: "cala-junco", name: "Cala Junco", island: "Panarea",
-    lat: 38.6213, lng: 15.0563, approx: false,
-    type: "cove_snorkel", depth: 8, depthText: "5–12 m — 'exceptional' seabed",
-    access: "shore", anchorage: "Just outside the cove (sand); swim in",
-    see: "An amphitheatre of dark volcanic basalt forming a natural pool; posidonia; dense sea bream and wrasse; octopus and moray eels; exceptional underwater light.",
-    notes: "Free; the cove is small — enter by swimming only. ~45 min path from San Pietro, or swim from an anchored boat.",
-    desc: "The jewel of Panarea: an amphitheatre cove where extraordinary basalt formations create a natural swimming pool with some of the best snorkelling seabed in the archipelago.",
-    sources: [["turismoeolie — Boating Panarea", "http://aeolianislands.turismoeolie.com/boating-panarea/"], ["Lonely Planet — Cala Junco", "https://www.lonelyplanet.com/italy/sicily/panarea/attractions/cala-junco/a/poi-sig/1397095/359996"]]
-  },
-  {
-    id: "calcara-thermal", name: "Calcara Beach Thermal Spring", island: "Panarea",
-    lat: 38.6377, lng: 15.0432, approx: true,
-    type: "thermal_bubble", depth: 1, depthText: "0–2 m shore fumaroles",
-    access: "shore", anchorage: "Baia Milazzese / Ditella dock",
-    see: "Fumaroles venting hot gas from the beach sediment; steaming ground; 50°C water gushing under the seabed; submarine fumarole activity just offshore.",
-    notes: "Free public beach; documented since Roman times. Don't touch vent points or dig into the sediment.",
-    desc: "Panarea's onshore fumarole field — the geological complement to the offshore Bottaro/Lisca Bianca vents — with steaming ground and hot springs you can pair with an offshore bubble snorkel.",
-    sources: [["turismoeolie — What to see at Panarea", "http://aeolianislands.turismoeolie.com/what-to-see-at-panarea/"], ["Smithsonian GVP — Panarea 2002", "https://volcano.si.edu/showreport.cfm?doi=10.5479%2Fsi.GVP.BGVN200210-211041"]]
-  },
-  {
-    id: "lisca-bianca", name: "Lisca Bianca — Fumaroles & Grotta degli Innamorati", island: "Panarea islets",
-    lat: 38.6398, lng: 15.1152, approx: false,
-    type: "thermal_bubble", depth: 9, depthText: "7–10 m vents; cave near surface",
-    access: "boat", anchorage: "Between Lisca Bianca & Bottaro (5–13 m sand)",
-    see: "An extensive underwater fumarole field venting CO₂ at ~40°C — 'deafening' bubbling underwater, sulphur at the surface; the Grotta degli Innamorati cave nearby; whitish islet colouring from fumarole activity.",
-    notes: "No landing on the islet. Sulphur vents — limit time at vent centres. Activity well-established since the 2002 eruption.",
-    desc: "The most spectacular natural underwater jacuzzi in the archipelago: CO₂-rich vents cascade bubbles from the seabed at 7–10 m between Lisca Bianca and Bottaro.",
-    sources: [["UNESCO Smart Education — Lisca Bianca fumaroles", "https://www.smarteducationunescosicilia.it/en/isole-eolie/the-underwater-fumarolic-activity-of-lisca-bianca/"], ["turismoeolie — Boating Panarea", "http://aeolianislands.turismoeolie.com/boating-panarea/"], ["YouTube — Skin diving on the vents", "https://www.youtube.com/watch?v=iQJiE1GGZzI"]]
-  },
-  {
-    id: "bottaro", name: "Bottaro — La Sorgente dei Quadrati (CO₂ vents)", island: "Panarea islets",
-    lat: 38.6380, lng: 15.1103, approx: false,
-    type: "thermal_bubble", depth: 8, depthText: "5–13 m; most intense 5–10 m",
-    access: "boat", anchorage: "Between Bottaro & Lisca Bianca (5–13 m sand)",
-    see: "A hydrothermal field where CO₂ and hydrogen sulphide make the water 'boil' with bubbles — multiple vents, the largest just N of the islet; a natural hydro-massage; vent temps to 40°C.",
-    notes: "No landing; same gas-caution as Lisca Bianca. All vent areas shallower than 30 m (Smithsonian GVP).",
-    desc: "The most concentrated Panarea vent field, where volcanic gases bubble vigorously from the sandy seabed — descending through the bubble columns is accessible to any confident swimmer.",
-    sources: [["turismoeolie — Boating Panarea", "http://aeolianislands.turismoeolie.com/boating-panarea/"], ["Smithsonian GVP — Panarea 2002", "https://volcano.si.edu/showreport.cfm?doi=10.5479%2Fsi.GVP.BGVN200210-211041"]]
-  },
-  {
-    id: "dattilo", name: "Dattilo Islet — Sea Caves & Passages", island: "Panarea islets",
-    lat: 38.6405, lng: 15.0983, approx: false,
-    type: "sea_cave", depth: 10, depthText: "5–15 m around the base",
-    access: "boat", anchorage: "Off the east coast (5–13 m sand)",
-    see: "A 103 m pyramid rock with sheer underwater walls; cave passages and the 'Guglia di Dattilo' gap on the west side; colourful sponges and algae; clear turquoise water.",
-    notes: "No landing; navigate carefully around shallow rocks.",
-    desc: "The pyramid-shaped rock of Dattilo rises 103 m from the sea, its base riddled with cave passages — easily combined with the Lisca Bianca and Bottaro bubble fields.",
-    sources: [["turismoeolie — Boating Panarea", "http://aeolianislands.turismoeolie.com/boating-panarea/"], ["GetYourGuide — Aeolian water sports", "https://www.getyourguide.com/aeolian-islands-l3446/water-sports-tc55/"]]
-  },
-  {
-    id: "lisca-nera", name: "Lisca Nera", island: "Panarea islets",
-    lat: 38.6352, lng: 15.1103, approx: false,
-    type: "stack", depth: 10, depthText: "5–15 m around the base",
-    access: "boat", anchorage: "Between Bottaro & Lisca Bianca (5–13 m sand)",
-    see: "A small elongated dark basalt formation; clear turquoise water; dark rock walls with sponges and algae; dramatic for underwater photography.",
-    notes: "No landing ban; part of the same volcanic caldera rim as Bottaro and Lisca Bianca.",
-    desc: "The smallest and darkest of the Panarea islet cluster — an easy add-on to the Bottaro/Lisca Bianca bubble-snorkel route.",
-    sources: [["turismoeolie — Boating Panarea", "http://aeolianislands.turismoeolie.com/boating-panarea/"], ["Sailogy — Aeolian anchorages", "https://www.sailogy.com/en/blog/yacht-rental-aeolian-islands/"]]
-  },
-  {
-    id: "basiluzzo", name: "Basiluzzo — Roman Boathouse (submerged)", island: "Panarea islets",
-    lat: 38.6642, lng: 15.1144, approx: false,
-    type: "shallow_archaeology", depth: 7.5, depthText: "7.5 m — Roman navalia ruins",
-    access: "boat", anchorage: "East coast (9–14 m sand/stone)",
-    see: "At 7.5 m near the eastern bay: ruins of a Roman boathouse (navalia), encrusted with gorgonians and sponges; a Roman villa with mosaics above water; sea bream and barracuda; exceptional clarity — ruins visible from the surface on calm days.",
-    notes: "No formal dive ban; tender landing on the east beach only — the path is landslide-prone.",
-    desc: "The only spot in the Aeolians with snorkelable Roman-era underwater ruins at 7.5 m — the submerged boathouse of an ancient villa that once crowned this uninhabited islet.",
-    sources: [["turismoeolie — Boating Panarea", "http://aeolianislands.turismoeolie.com/boating-panarea/"], ["GetYourGuide — Aeolian water sports", "https://www.getyourguide.com/aeolian-islands-l3446/water-sports-tc55/"]]
-  },
-  {
-    id: "piscina-romana", name: "Roman Fish Pool (Piscina Romana)", island: "Panarea",
-    lat: 38.6360, lng: 15.0630, approx: true,
-    type: "shallow_archaeology", depth: 3, depthText: "2–5 m — very shallow",
-    access: "boat", anchorage: "San Pietro / Scalo Ditella",
-    see: "A submerged Roman fish pool (piscina) visible at only a few metres; a Roman paved road was also spotted at 4–5 m near Dattilo.",
-    notes: "Part of Sicily's official underwater-archaeology routes; guided tour recommended, no permit for snorkeling.",
-    desc: "One of the most accessible ancient underwater sites in the Aeolians — a Roman fish pool near San Pietro lying just metres beneath the surface.",
-    sources: [["VisitSicily — Underwater Archaeology Routes", "https://www.visitsicily.info/en/itinerario/underwater-archaeology-routes/"], ["turismoeolie — What to see at Panarea", "http://aeolianislands.turismoeolie.com/what-to-see-at-panarea/"]]
   },
 
   // ---------------- STROMBOLI ----------------
   {
-    id: "strombolicchio", name: "Strombolicchio Islet", island: "Stromboli",
-    lat: 38.8173, lng: 15.2519, approx: false,
+    id: "strombolicchio", name: "Strombolicchio", island: "Stromboli",
+    lat: 38.817300, lng: 15.251853, approx: false,
     type: "stack", depth: 10, depthText: "5–15 m around the base",
     access: "boat", anchorage: "Ficogrande buoy field (~1.5 km dinghy ride)",
-    see: "An ancient basalt volcanic chimney; vertical underwater walls colonised by gorgonians, sponges and bryozoans; 'deep blue' clarity; rare Aeolian wall lizards and a lighthouse on top.",
-    notes: "Integral Nature Reserve — landing on the islet is PROHIBITED. Snorkelling the surrounding water is permitted. Reach by dinghy/kayak from the catamaran.",
-    desc: "The basalt sea stack of Strombolicchio — the chimney of a long-eroded volcano — rises 1.5 km NE of Stromboli; snorkelling its richly colonised walls in crystal water is a must-do.",
-    sources: [["Wikipedia — Strombolicchio", "https://en.wikipedia.org/wiki/Strombolicchio"], ["Italia.it — Strombolicchio", "https://www.italia.it/en/sicily/strombolicchio"]]
+    see: "Ancient basalt volcanic chimney; vertical walls colonised by gorgonians, sponges and bryozoans; rich marine life; deep blue clarity.",
+    notes: "Integral Nature Reserve — landing PROHIBITED. Snorkelling the surrounding water is permitted. Boat trips depart May–Oct.",
+    desc: "Ancient volcanic sea stack 2 km NE of Stromboli — rich marine life around its base in exceptional visibility. Landing prohibited; snorkel from the boat.",
+    sources: [["Wikipedia — Strombolicchio", "https://en.wikipedia.org/wiki/Strombolicchio"], ["italia.it — Strombolicchio", "https://www.italia.it/en/sicily/strombolicchio"]]
   },
   {
-    id: "ficogrande", name: "Ficogrande / Punta Lena Shore", island: "Stromboli",
-    lat: 38.793, lng: 15.220, approx: true,
-    type: "beach_snorkel", depth: 8, depthText: "5–12 m sand & stones",
-    access: "shore", anchorage: "Punta Lena buoy field / 5–12 m off the beach",
-    see: "Black volcanic sand and pebble seabed with a dark lustre; sea bream, wrasse and damselfish; Strombolicchio visible on the horizon as you float; cave formations in nearby lava cliffs.",
-    notes: "Free public beach; snorkel away from the summer ferry lane.",
-    desc: "Stromboli's accessible shore snorkel along black-sand Ficogrande, with the iconic Strombolicchio silhouette on the horizon and a uniquely dramatic dark seabed.",
-    sources: [["WTP Travel — Stromboli", "https://wtp.travel/travel-guides/italy/stromboli/activities/"], ["Sailogy — Aeolian anchorages", "https://www.sailogy.com/en/blog/yacht-rental-aeolian-islands/"]]
-  },
-  {
-    id: "piscita", name: "Piscità Beach & Lava Cave Walls", island: "Stromboli",
-    lat: 38.798, lng: 15.208, approx: true,
-    type: "cove_snorkel", depth: 10, depthText: "5–15 m along lava walls",
-    access: "shore", anchorage: "From Ficogrande anchorage / small bay",
-    see: "Ancient lava-flow cliff walls with sea caves; colourful marine life on the volcanic rock; quieter and more photogenic than Ficogrande.",
-    notes: "Free; no restrictions. Calm conditions for the caves.",
-    desc: "Stromboli's quietest snorkel beach, with lava cliffs and small caves to explore and unusually clear turquoise water over dark volcanic rock.",
-    sources: [["WTP Travel — Stromboli", "https://wtp.travel/travel-guides/italy/stromboli/activities/"], ["Adventurous Kate — Aeolian guide", "https://www.adventurouskate.com/aeolian-islands-sicily-travel-guide/"]]
+    id: "sciara-fuoco", name: "Sciara del Fuoco", island: "Stromboli",
+    lat: 38.801253, lng: 15.205180, approx: false,
+    type: "reef_secca", depth: 10, depthText: "5–15 m — volcanic rocky seabed",
+    access: "boat", anchorage: "Stand off — approach by dinghy from Ficogrande",
+    see: "Active lava flow scar on Stromboli's NW flank; rocky seabed covered in sponges and soft corals; best at sunset to watch eruptions overhead.",
+    notes: "Do not approach the shore closely — active lava entry can occur. Watch eruptions from the boat. Boat only.",
+    desc: "Stromboli's active lava flow scar — rocky seabed covered in sponges and soft corals, best visited by boat at sunset to watch eruptions overhead.",
+    sources: [["Wikipedia — Sciara del Fuoco", "https://en.wikipedia.org/wiki/Sciara_del_Fuoco"], ["WTP Travel — Stromboli", "https://wtp.travel/travel-guides/italy/stromboli/activities/"]]
   },
 
   // ---------------- FILICUDI ----------------
   {
-    id: "la-canna", name: "La Canna Sea Stack", island: "Filicudi",
-    lat: 38.566, lng: 14.556, approx: true,
-    type: "stack", depth: 17, depthText: "5–20 m around the base",
-    access: "boat", anchorage: "Off Montenassari rock (12–16 m); 1.6 km offshore",
-    see: "A 71 m columnar stack rising from the deep; 'crystal clear' water, colourful fish, gorgonians and sponges on the base; walls vanishing into deep blue; protected lizard population above.",
-    notes: "No landing — UNESCO-protected islet with protected lizards. Surrounding water unrestricted. Sea can be rough — assess from the boat.",
-    desc: "The tallest sea stack in the Aeolians — a 71 m volcanic column 1.6 km off Filicudi — ringed by some of the clearest water in the archipelago.",
-    sources: [["Loveolie — La Canna", "https://www.loveolie.com/en/attractions/mare-eolie/la-canna"], ["Aeolian Yacht Services — Filicudi & Alicudi", "https://www.aeolianyachtservices.com/filicudi-and-alicudi/"]]
-  },
-  {
     id: "bue-marino", name: "Grotta del Bue Marino", island: "Filicudi",
-    lat: 38.567, lng: 14.557, approx: true,
+    lat: 38.571656, lng: 14.542465, approx: false,
     type: "sea_cave", depth: 6, depthText: "0–10 m inside; seabed visible",
     access: "boat", anchorage: "Pecorini a Mare buoy field",
-    see: "The largest sea cave in the archipelago; extraordinary light and shadow; named for the 'sea ox' sound and historic monk seals; turquoise-to-cobalt water; starfish, urchins, sponges, crabs and eels.",
-    notes: "Inner chamber was restricted 2021–22 for rockfall risk — confirm locally; entrance/approach waters are open. Enter with a small boat able to clear the low mouth.",
-    desc: "The most celebrated sea cave in the Aeolians — a vast lava cave on Filicudi's NW coast with dazzling light effects and crystal-clear shallow water.",
+    see: "Largest sea cave in the Aeolians — 20m high, 30m wide; spectacular light effects and stalactites; extraordinary colour inside.",
+    notes: "SW coast of Filicudi. Watch the current on the way back out. Inner chamber was restricted 2021–22 for rockfall risk — confirm locally before entering.",
+    desc: "The largest sea cave in the Aeolians — 20m high and 30m wide on Filicudi's SW coast, with spectacular light effects and stalactites.",
     sources: [["Loveolie — Grotta del Bue Marino", "https://www.loveolie.com/en/attractions/mare-eolie/grotta-bue-marino"], ["Tripadvisor — Grotta del Bue Marino", "https://www.tripadvisor.com/Attraction_Review-g675109-d15683279-Reviews-Grotta_del_bue_marino-Filicudi_Aeolian_Islands_Islands_of_Sicily_Sicily.html"]]
   },
   {
-    id: "montenassari", name: "Montenassari & Giafante Stacks", island: "Filicudi",
-    lat: 38.557, lng: 14.548, approx: true,
-    type: "stack", depth: 11, depthText: "5–16 m around the bases",
-    access: "boat", anchorage: "Montenassari (12–16 m)",
-    see: "Two smaller volcanic neck formations with rewarding rocky seabed; colourful fish and the clear water typical of Filicudi's pristine west coast.",
-    notes: "Free, no restrictions; day anchorage. West coast can be exposed.",
-    desc: "Smaller cousins of La Canna on Filicudi's west coast — a Sailogy skipper specifically recommends anchoring here 'with a snorkel' for the rocky seabed.",
-    sources: [["Sailogy — Aeolian anchorages", "https://www.sailogy.com/en/blog/yacht-rental-aeolian-islands/"], ["GetYourGuide — Filicudi & Alicudi", "https://www.getyourguide.com/grotta-del-bue-marino-l203725/"]]
+    id: "la-canna", name: "La Canna", island: "Filicudi",
+    lat: 38.582405, lng: 14.521094, approx: false,
+    type: "stack", depth: 17, depthText: "5–20 m around the base",
+    access: "boat", anchorage: "Off Montenassari rock (12–16 m); 1.6 km offshore",
+    see: "71 m volcanic sea stack; crystal-clear water with groupers, amberjacks and lobster at the base; walls vanishing into deep blue.",
+    notes: "Protected nature reserve — landing prohibited. Snorkel from the boat. Seas can be rough — assess from anchorage before going.",
+    desc: "A 71 m volcanic sea stack NW of Filicudi — crystal-clear water at the base with groupers, amberjacks and lobster. Landing prohibited; snorkel from the boat.",
+    sources: [["Loveolie — La Canna", "https://www.loveolie.com/en/attractions/mare-eolie/la-canna"], ["Aeolian Yacht Services — Filicudi & Alicudi", "https://www.aeolianyachtservices.com/filicudi-and-alicudi/"]]
   },
   {
-    id: "secca-capo-graziano", name: "Secca di Capo Graziano Reef", island: "Filicudi",
-    lat: 38.538, lng: 14.562, approx: true,
-    type: "reef_secca", depth: 5, depthText: "Crest 3 m → 18–20 m",
+    id: "capo-graziano", name: "Capo Graziano / Secca", island: "Filicudi",
+    lat: 38.557313, lng: 14.588502, approx: false,
+    type: "shallow_archaeology", depth: 15, depthText: "5–20 m — 7 shipwrecks Bronze Age to 17th C",
     access: "boat", anchorage: "Filicudi Porto buoy field (~100 m)",
-    see: "A rocky monolith rising to within 3 m of the surface with pointed jags; dense gorgonians and sponges; site of ancient & modern shipwrecks (amphora finds); the Bronze Age village visible above on the cape.",
-    notes: "Free; the reef top (3–5 m) is freely snorkelable. It's a boat hazard — approach by dinghy. Formal shipwreck dives are guided/scuba; snorkelling the crest is open.",
-    desc: "A submerged reef rising to 3 m below the surface off Filicudi's south tip — an important shipwreck-archaeology site whose snorkelable crest teems with marine life.",
-    sources: [["Aeolian Yacht Services — Filicudi & Alicudi", "https://www.aeolianyachtservices.com/filicudi-and-alicudi/"], ["vacanzeinbarca — Filicudi", "https://www.vacanzeinbarca.it/en/destinazioni/filicudi-alicudi.php"]]
+    see: "7 shipwrecks from the Bronze Age to a 17th-century Spanish galleon; clouds of fish; sea-whips and shrimps in caves; snorkelable reef crest at 5–10 m.",
+    notes: "Snorkelling the outer reef crest (5–10 m) is free; formal shipwreck dives are guided/scuba. Reef is a boat hazard — approach by dinghy.",
+    desc: "An underwater archaeological site with 7 shipwrecks spanning the Bronze Age to a 17th-century Spanish galleon — clouds of fish and sea-whips.",
+    sources: [["Aeolian Yacht Services — Filicudi & Alicudi", "https://www.aeolianyachtservices.com/filicudi-and-alicudi/"], ["VisitSicily — Underwater Archaeology", "https://www.visitsicily.info/en/itinerario/underwater-archaeology-routes/"]]
+  },
+  {
+    id: "grotta-gamberi", name: "Grotta dei Gamberi", island: "Filicudi",
+    lat: 38.558000, lng: 14.545000, approx: true,
+    type: "sea_cave", depth: 20, depthText: "Entrance walls ~18–20 m — freedive territory",
+    access: "boat", anchorage: "Pecorini a Mare buoy field",
+    see: "Thousands of Plesionika narval shrimps coating the cave walls; sponges and moray eels; deep cave descending to 33–39 m — only the entrance walls are snorkelable.",
+    notes: "Deep cave (33–39 m full depth) — freedive/scuba territory for the main chamber. For confident freedivers only at entrance walls. Boat from Filicudi Porto.",
+    desc: "A deep cave packed with thousands of shrimps coating its walls, plus sponges and moray eels — freedive territory from the boat at Filicudi Porto.",
+    sources: [["vacanzeinbarca — Filicudi", "https://www.vacanzeinbarca.it/en/destinazioni/filicudi-alicudi.php"], ["Aeolian Yacht Services — Filicudi & Alicudi", "https://www.aeolianyachtservices.com/filicudi-and-alicudi/"]]
   },
 
   // ---------------- ALICUDI ----------------
   {
-    id: "alicudi-cove", name: "Alicudi Harbour Cove", island: "Alicudi",
-    lat: 38.539, lng: 14.351, approx: true,
+    id: "alicudi-harbour", name: "Alicudi Harbour", island: "Alicudi",
+    lat: 38.532301, lng: 14.359834, approx: false,
     type: "cove_snorkel", depth: 10, depthText: "5–15 m; drops off quickly",
     access: "shore", anchorage: "Buoys off the village / 10–15 m by the dock",
-    see: "Among the clearest water in the archipelago (20–30 m visibility); multicoloured seaweed and posidonia; Alicudi's signature 'fili' basalt columns; urchins, grouper and octopus; ancient rockslide fields on the seabed.",
-    notes: "Free, no restrictions; no sandy beaches — entry over volcanic rock needs reef shoes. The most remote, pristine Aeolian island.",
-    desc: "Alicudi's waters are arguably the cleanest in the archipelago; a short swim from the harbour reaches a largely untouched marine world of basalt 'fili' columns.",
+    see: "Reportedly the clearest water in the archipelago — 20–30 m visibility; multicoloured seaweed and posidonia; urchins, grouper and octopus; basalt column formations.",
+    notes: "Remotest island in the Aeolians — virtually no tourists. No equipment rental on island — bring everything.",
+    desc: "The remotest Aeolian island with 20–30 m visibility — reportedly the clearest water in the archipelago. Virtually no tourists; bring all your own equipment.",
     sources: [["Aeolian Yacht Services — Filicudi & Alicudi", "https://www.aeolianyachtservices.com/filicudi-and-alicudi/"], ["Apartment in Catania — Alicudi", "https://www.apartmentincatania.com/en/alicudi-island/"]]
-  },
-
-  // ---------------- SALINA (kept archaeology) ----------------
-  {
-    id: "contrada-barone", name: "Contrada Barone Roman Baths", island: "Salina",
-    lat: 38.5630, lng: 14.8720, approx: true,
-    type: "shallow_archaeology", depth: 1, depthText: "0–3 m coastal / tidal",
-    access: "shore", anchorage: "Santa Marina Salina",
-    see: "A partly-submerged Roman bath complex on the Santa Marina seafront, later reused as a garum (fish-sauce) salting plant; finds shown at the Museo Civico in Lingua.",
-    notes: "Protected site; standard rules; no permit for snorkeling the shallow remains.",
-    desc: "A shallow, partly-submerged Roman bath complex at Salina's seafront — one of the archipelago's accessible coastal archaeology spots.",
-    sources: [["Parchi Archeologici Regione Sicilia", "https://parchiarcheologici.regione.sicilia.it/isole-eolie/en/siti-archeologici/aree-archeologiche-del-demanio-comunale/"]]
   }
 ];
 
@@ -388,7 +338,7 @@ const BOAT_ROUTES = [
     name: "Filicudi western route", color: "#ffcf8f",
     points: [
       [38.56167, 14.58567], [38.55800, 14.56500], [38.55700, 14.54900],
-      [38.566, 14.556], [38.538, 14.562]
+      [38.582405, 14.521094], [38.557313, 14.588502]
     ]
   },
   {

@@ -16,8 +16,8 @@ const state = {
 
 // ---- Map setup ----
 const map = L.map("map", {
-  center: [39.20, 23.92],
-  zoom: 12,
+  center: [38.55, 14.92],
+  zoom: 11,
   zoomControl: true,
   minZoom: 9,
   maxZoom: 18
@@ -306,15 +306,17 @@ function renderList(visible) {
 
 // Shared helper: update the in-memory dataset + marker after a coord change
 function commitNewCoords(site, lat, lng) {
-  site.lat   = lat;
-  site.lng   = lng;
+  site.lat    = lat;
+  site.lng    = lng;
   site._reach = reachability(site);
+  site.approx = false;
 
   const m = markerById[site.id];
   if (m) {
     m.setLatLng([lat, lng]);
     m.setPopupContent(popupHtml(site));
   }
+  saveCoordOverride(site.id, lat, lng);
   applyFilters();
 }
 
@@ -379,11 +381,7 @@ function confirmDrag() {
   const { site, marker } = _dragState;
   const { lat, lng } = marker.getLatLng();
 
-  // Commit to the dataset
   commitNewCoords(site, lat, lng);
-  // Mark the site as no longer approximate now that user has placed it precisely
-  site.approx = false;
-
   exitDragMode();
 
   // Show a toast with copyable coordinates
@@ -440,7 +438,7 @@ function showDragToast(site, lat, lng) {
   toast.className = "drag-toast";
   toast.innerHTML = `
     <div class="drag-toast-title">📍 ${site.name}</div>
-    <div class="drag-toast-sub">Position updated. Copy new coords for data.js:</div>
+    <div class="drag-toast-sub">Position saved — persists on this device. Copy to update data.js:</div>
     <code class="drag-toast-coords" title="Click to select">${lat.toFixed(6)}, ${lng.toFixed(6)}</code>
     <button class="drag-toast-close" onclick="this.parentElement.remove()">×</button>
   `;
@@ -540,7 +538,7 @@ function openDrawer(id) {
           commitNewCoords(site, lat, lng);
           output.hidden    = false;
           output.className = "gps-output";
-          output.innerHTML = `<div class="gps-coords">New Coordinates (copy for data.js):</div>
+          output.innerHTML = `<div class="gps-coords">Saved — persists on this device. Copy to update data.js:</div>
             <code class="gps-value">${lat.toFixed(6)}, ${lng.toFixed(6)}</code>`;
           btn.textContent = "📍 Update Again";
           btn.disabled    = false;
@@ -650,6 +648,30 @@ function buildTypeFilters() {
   wrap.appendChild(ctrls);
 }
 
+// ---- Coordinate overrides (localStorage) ----
+function loadCoordOverrides() {
+  try {
+    const overrides = JSON.parse(localStorage.getItem("aeolian_coord_overrides") || "{}");
+    SITES.forEach((site) => {
+      if (overrides[site.id]) {
+        const { lat, lng } = overrides[site.id];
+        site.lat    = lat;
+        site.lng    = lng;
+        site._reach = reachability(site);
+        site.approx = false;
+      }
+    });
+  } catch (_) {}
+}
+
+function saveCoordOverride(siteId, lat, lng) {
+  try {
+    const overrides = JSON.parse(localStorage.getItem("aeolian_coord_overrides") || "{}");
+    overrides[siteId] = { lat, lng };
+    localStorage.setItem("aeolian_coord_overrides", JSON.stringify(overrides));
+  } catch (_) {}
+}
+
 // ---- Wire up segmented controls ----
 function wireSegments(containerId, key) {
   const c = document.getElementById(containerId);
@@ -665,6 +687,7 @@ function wireSegments(containerId, key) {
 
 // ---- Init ----
 function init() {
+  loadCoordOverrides();
   buildDepthFilters();
   buildTypeFilters();
   buildSiteMarkers();
