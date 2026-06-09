@@ -21,17 +21,10 @@ const DEPTH_BANDS = {
 };
 function bandFor(d) { if (d <= 5) return "surface"; if (d <= 10) return "mid"; return "lower"; }
 
-// Feature-type catalogue (for the type filter + marker glyphs).
+// Feature types for snorkel sites (beaches distinguished for the parasol icon).
 const FEATURE_TYPES = {
-  sea_cave:           { label: "Sea cave / grotto", glyph: "◗" },
-  stack:              { label: "Stack / faraglione", glyph: "▲" },
-  arch:               { label: "Natural arch", glyph: "⌒" },
-  natural_pool:       { label: "Natural pool", glyph: "❉" },
-  thermal_bubble:     { label: "Thermal bubbles", glyph: "✦" },
-  reef_secca:         { label: "Reef / secca", glyph: "✷" },
-  cove_snorkel:       { label: "Snorkel cove", glyph: "≈" },
-  beach_snorkel:      { label: "Beach snorkel", glyph: "≋" },
-  shallow_archaeology:{ label: "Shallow archaeology", glyph: "⌂" }
+  snorkel: { label: "Snorkel site", glyph: "≈" },
+  beach:   { label: "Beach",        glyph: "⛱" }
 };
 
 // Access model: shore = walk-in possible; boat = anchor & swim only.
@@ -40,7 +33,7 @@ const SITES = [
   {
     id: "cala-junco", name: "Cala Junco", island: "Panarea",
     lat: 38.625685, lng: 15.063242, approx: false,
-    type: "cove_snorkel", depth: 8, depthText: "5–12 m — volcanic basalt seabed",
+    type: "snorkel", depth: 8, depthText: "5–12 m — volcanic basalt seabed",
     access: "shore", anchorage: "Outside the cove in 5–10 m sand; swim in",
     see: "Volcanic amphitheatre of dark basalt forming a natural pool; dense sea bream and wrasse; octopus and moray eels; exceptional underwater light.",
     notes: "30-min walk from San Pietro pier. Go before 9am or after 5pm to beat crowds. No restrictions; enter by swimming only — no boat entry.",
@@ -50,7 +43,7 @@ const SITES = [
   {
     id: "cala-zimmari", name: "Cala Zimmari", island: "Panarea",
     lat: 38.628801, lng: 15.066016, approx: false,
-    type: "beach_snorkel", depth: 5, depthText: "3–8 m — distinctive red sand",
+    type: "beach", depth: 5, depthText: "3–8 m — distinctive red sand",
     access: "shore", anchorage: "Just off the beach in 5–8 m",
     see: "Distinctive red volcanic sand; calm sheltered water; sea bream and wrasse; easy entry for snorkelling over sandy seabed.",
     notes: "Only sandy beach on Panarea. 20-min walk from San Pietro port. No restrictions.",
@@ -60,7 +53,7 @@ const SITES = [
   {
     id: "calcara-fumaroles", name: "Spiaggia della Calcara", island: "Panarea",
     lat: 38.645653, lng: 15.074647, approx: false,
-    type: "thermal_bubble", depth: 2, depthText: "0–3 m — shore fumaroles",
+    type: "snorkel", depth: 2, depthText: "0–3 m — shore fumaroles",
     access: "shore", anchorage: "Ditella dock / Panarea Nord buoy field",
     see: "Volcanic gases bubbling up through the seabed and rock cracks; hot steam venting from beach fissures; eerie and unique.",
     notes: "Active fumarole beach — 20-min walk from San Pietro towards Ditella. Don't dig into vent sediment or touch vent centres.",
@@ -72,7 +65,7 @@ const SITES = [
   {
     id: "lisca-bianca-bottaro", name: "Lisca Bianca / Bottaro Fumaroles", island: "Panarea islets",
     lat: 38.637000, lng: 15.082000, approx: true,
-    type: "thermal_bubble", depth: 9, depthText: "5–13 m — volcanic gas vents",
+    type: "snorkel", depth: 9, depthText: "5–13 m — volcanic gas vents",
     access: "boat", anchorage: "Between the two islets (5–13 m sand)",
     see: "Volcanic CO₂ vents bubbling vigorously from the sandy seabed; milky water near vent centres; the Grotta degli Innamorati (Lovers' Arch) swim-through on Lisca Bianca.",
     notes: "Anchor between the two islets. No landing on either. Limit time at vent centres. Gas caution: sulphur present.",
@@ -82,7 +75,7 @@ const SITES = [
   {
     id: "dattilo", name: "Dattilo", island: "Panarea islets",
     lat: 38.637000, lng: 15.077000, approx: true,
-    type: "stack", depth: 10, depthText: "5–15 m — volcanic rock formations",
+    type: "snorkel", depth: 10, depthText: "5–15 m — volcanic rock formations",
     access: "boat", anchorage: "Off the east coast (5–13 m sand)",
     see: "Tall narrow volcanic islet; interesting rock formations and cave passages below the waterline; colourful sponges and algae in clear water.",
     notes: "No landing; navigate carefully around shallow rocks. Best combined with Lisca Bianca in a single boat day.",
@@ -92,7 +85,7 @@ const SITES = [
   {
     id: "basiluzzo", name: "Basiluzzo", island: "Panarea islets",
     lat: 38.663690, lng: 15.113470, approx: false,
-    type: "shallow_archaeology", depth: 7.5, depthText: "7.5 m — Roman navalia ruins",
+    type: "snorkel", depth: 7.5, depthText: "7.5 m — Roman navalia ruins",
     access: "boat", anchorage: "East coast (9–14 m sand/stone)",
     see: "Roman boathouse (navalia) ruins at 7.5 m encrusted with gorgonians and sponges; visible from the surface on calm days; sheer cliffs above emerald water.",
     notes: "Uninhabited volcanic islet. Landing on the east beach only — path is landslide-prone. No formal dive ban on surrounding water.",
@@ -104,7 +97,7 @@ const SITES = [
   {
     id: "spiaggia-asino", name: "Spiaggia dell'Asino", island: "Lipari",
     lat: 38.370390, lng: 14.997942, approx: false,
-    type: "cove_snorkel", depth: 8, depthText: "5–12 m — rocky seabed under black cliffs",
+    type: "snorkel", depth: 8, depthText: "5–12 m — rocky seabed under black cliffs",
     access: "shore", anchorage: "Off the cove in 8–14 m",
     see: "Crystal-clear water over a rocky volcanic seabed under black cliffs; sea bream and wrasse; extraordinary isolation for a Lipari beach.",
     notes: "200m steep descent on foot or water taxi from Lipari town. No restrictions.",
@@ -114,7 +107,7 @@ const SITES = [
   {
     id: "valle-muria", name: "Valle Muria", island: "Lipari",
     lat: 38.460500, lng: 14.933837, approx: false,
-    type: "beach_snorkel", depth: 5, depthText: "0–8 m — dark volcanic sand and tuff caves",
+    type: "beach", depth: 5, depthText: "0–8 m — dark volcanic sand and tuff caves",
     access: "shore", anchorage: "Valle Muria bay (8–15 m sand)",
     see: "Dark volcanic beach flanked by Pietra Lunga and Pietra Menalda sea stacks; fumaroles; small tuff caves to explore; extraordinary volcanic geology.",
     notes: "25-min hike from Quattrocchi viewpoint. Confirm land access before visiting — path intermittently closed. Boat access always reliable.",
@@ -124,7 +117,7 @@ const SITES = [
   {
     id: "pumice-canyon", name: "Pumice Canyon (Punta Castagna)", island: "Lipari",
     lat: 38.512566, lng: 14.959444, approx: false,
-    type: "beach_snorkel", depth: 8, depthText: "5–12 m — white pumice seabed",
+    type: "beach", depth: 8, depthText: "5–12 m — white pumice seabed",
     access: "shore", anchorage: "Porticello / Canneto bay",
     see: "White pumice cliffs meeting vivid blue sea near Porticello; otherworldly contrast; white pumice seabed shimmering below; viewable from both land and sea.",
     notes: "Walk from Porticello or approach by boat. No restrictions.",
@@ -136,7 +129,7 @@ const SITES = [
   {
     id: "acque-calde", name: "Acque Calde (Fumarole Beach)", island: "Vulcano",
     lat: 38.417609, lng: 14.959443, approx: false,
-    type: "thermal_bubble", depth: 2, depthText: "0–3 m — volcanic fumaroles from below",
+    type: "snorkel", depth: 2, depthText: "0–3 m — volcanic fumaroles from below",
     access: "shore", anchorage: "Porto di Levante (5–6 m sand/mud)",
     see: "Volcanic fumaroles heating the sea from below; milky-coloured water near shore; curtains of CO₂ bubbles rising from the black sand seabed.",
     notes: "Do not wear silver jewellery — it tarnishes instantly. Water near vent centres can be very hot. Easy walk from Porto Levante. Free.",
@@ -146,7 +139,7 @@ const SITES = [
   {
     id: "grotta-cavallo", name: "Grotta del Cavallo", island: "Vulcano",
     lat: 38.402622, lng: 14.939964, approx: false,
-    type: "sea_cave", depth: 5, depthText: "2–8 m in cave",
+    type: "snorkel", depth: 5, depthText: "2–8 m in cave",
     access: "boat", anchorage: "Bay south of the cave (5–12 m sand)",
     see: "Spectacular sea cave on Vulcano's NW coast; light refracts through a natural siphon creating dazzling colour effects; adjacent to the Piscina di Venere.",
     notes: "Depart from Porto Levante or Spiagge Nere. Exposed west coast — calm weather essential. Boat only.",
@@ -156,7 +149,7 @@ const SITES = [
   {
     id: "piscina-venere", name: "Piscina di Venere (Venus Pool)", island: "Vulcano",
     lat: 38.402900, lng: 14.938000, approx: true,
-    type: "natural_pool", depth: 3, depthText: "1–5 m — completely enclosed rock pool",
+    type: "snorkel", depth: 3, depthText: "1–5 m — completely enclosed rock pool",
     access: "boat", anchorage: "Bay south of the caves (5–12 m sand)",
     see: "A natural tuff-and-basalt rock pool completely enclosed from the sea; extraordinary turquoise colour; one of Italy's most beautiful natural pools.",
     notes: "Boat access only from Porto Levante or Spiagge Nere. Calm weather essential on this exposed west coast.",
@@ -166,7 +159,7 @@ const SITES = [
   {
     id: "spiaggia-gelso", name: "Spiaggia di Gelso", island: "Vulcano",
     lat: 38.369544, lng: 14.994758, approx: false,
-    type: "beach_snorkel", depth: 8, depthText: "5–15 m — drops quickly to vivid blue",
+    type: "beach", depth: 8, depthText: "5–15 m — drops quickly to vivid blue",
     access: "shore", anchorage: "Gelso (12–18 m off beach)",
     see: "Black volcanic sand dropping quickly to vivid blue depths; large grouper and sea bream; far fewer crowds than Vulcano's north coast.",
     notes: "Remote — spectacular drive across the island or boat from Porto Levante. No restrictions.",
@@ -178,7 +171,7 @@ const SITES = [
   {
     id: "pollara", name: "Pollara Bay", island: "Salina",
     lat: 38.579933, lng: 14.807069, approx: false,
-    type: "cove_snorkel", depth: 8, depthText: "5–10 m — submerged crater walls",
+    type: "snorkel", depth: 8, depthText: "5–10 m — submerged crater walls",
     access: "shore", anchorage: "Between Punta Perciato & the Faraglione (5–10 m)",
     see: "Submerged volcanic crater topography; volcanic sconcassi gas seeps; Il Postino filmset cliffs above; swim right to reach the Arco del Perciato sea arch.",
     notes: "150 steps down from Pollara village. Exposed to W/NW swell — fair-weather only. Richest underwater landscape on Salina.",
@@ -188,7 +181,7 @@ const SITES = [
   {
     id: "arco-perciato", name: "Arco del Perciato", island: "Salina",
     lat: 38.582725, lng: 14.806819, approx: false,
-    type: "arch", depth: 2, depthText: "1–3 m at arch base",
+    type: "snorkel", depth: 2, depthText: "1–3 m at arch base",
     access: "boat", anchorage: "Pollara Bay (immediately south)",
     see: "Dramatic lava arch at water level; algae and anemones on the base; frames Pollara Bay behind; swimmable from the beach.",
     notes: "Reachable from the Balate steps or by boat from Pollara Bay. A recent rockfall may have reduced clearance — check locally.",
@@ -198,7 +191,7 @@ const SITES = [
   {
     id: "spiaggia-rinella", name: "Spiaggia di Rinella", island: "Salina",
     lat: 38.547960, lng: 14.829794, approx: false,
-    type: "beach_snorkel", depth: 8, depthText: "5–12 m — large fish in good visibility",
+    type: "beach", depth: 8, depthText: "5–12 m — large fish in good visibility",
     access: "shore", anchorage: "Rinella anchorage (8–12 m off beach)",
     see: "Black pebble seabed; large grouper and sea bream to the left of the beach; good visibility; locals' favourite.",
     notes: "Most accessible beach on Salina's south coast. Black-pebble — bring reef shoes. No restrictions.",
@@ -210,7 +203,7 @@ const SITES = [
   {
     id: "strombolicchio", name: "Strombolicchio", island: "Stromboli",
     lat: 38.817300, lng: 15.251853, approx: false,
-    type: "stack", depth: 10, depthText: "5–15 m around the base",
+    type: "snorkel", depth: 10, depthText: "5–15 m around the base",
     access: "boat", anchorage: "Ficogrande buoy field (~1.5 km dinghy ride)",
     see: "Ancient basalt volcanic chimney; vertical walls colonised by gorgonians, sponges and bryozoans; rich marine life; deep blue clarity.",
     notes: "Integral Nature Reserve — landing PROHIBITED. Snorkelling the surrounding water is permitted. Boat trips depart May–Oct.",
@@ -220,7 +213,7 @@ const SITES = [
   {
     id: "sciara-fuoco", name: "Sciara del Fuoco", island: "Stromboli",
     lat: 38.801253, lng: 15.205180, approx: false,
-    type: "reef_secca", depth: 10, depthText: "5–15 m — volcanic rocky seabed",
+    type: "snorkel", depth: 10, depthText: "5–15 m — volcanic rocky seabed",
     access: "boat", anchorage: "Stand off — approach by dinghy from Ficogrande",
     see: "Active lava flow scar on Stromboli's NW flank; rocky seabed covered in sponges and soft corals; best at sunset to watch eruptions overhead.",
     notes: "Do not approach the shore closely — active lava entry can occur. Watch eruptions from the boat. Boat only.",
@@ -232,7 +225,7 @@ const SITES = [
   {
     id: "bue-marino", name: "Grotta del Bue Marino", island: "Filicudi",
     lat: 38.571656, lng: 14.542465, approx: false,
-    type: "sea_cave", depth: 6, depthText: "0–10 m inside; seabed visible",
+    type: "snorkel", depth: 6, depthText: "0–10 m inside; seabed visible",
     access: "boat", anchorage: "Pecorini a Mare buoy field",
     see: "Largest sea cave in the Aeolians — 20m high, 30m wide; spectacular light effects and stalactites; extraordinary colour inside.",
     notes: "SW coast of Filicudi. Watch the current on the way back out. Inner chamber was restricted 2021–22 for rockfall risk — confirm locally before entering.",
@@ -242,7 +235,7 @@ const SITES = [
   {
     id: "la-canna", name: "La Canna", island: "Filicudi",
     lat: 38.582405, lng: 14.521094, approx: false,
-    type: "stack", depth: 17, depthText: "5–20 m around the base",
+    type: "snorkel", depth: 17, depthText: "5–20 m around the base",
     access: "boat", anchorage: "Off Montenassari rock (12–16 m); 1.6 km offshore",
     see: "71 m volcanic sea stack; crystal-clear water with groupers, amberjacks and lobster at the base; walls vanishing into deep blue.",
     notes: "Protected nature reserve — landing prohibited. Snorkel from the boat. Seas can be rough — assess from anchorage before going.",
@@ -252,7 +245,7 @@ const SITES = [
   {
     id: "capo-graziano", name: "Capo Graziano / Secca", island: "Filicudi",
     lat: 38.557313, lng: 14.588502, approx: false,
-    type: "shallow_archaeology", depth: 15, depthText: "5–20 m — 7 shipwrecks Bronze Age to 17th C",
+    type: "snorkel", depth: 15, depthText: "5–20 m — 7 shipwrecks Bronze Age to 17th C",
     access: "boat", anchorage: "Filicudi Porto buoy field (~100 m)",
     see: "7 shipwrecks from the Bronze Age to a 17th-century Spanish galleon; clouds of fish; sea-whips and shrimps in caves; snorkelable reef crest at 5–10 m.",
     notes: "Snorkelling the outer reef crest (5–10 m) is free; formal shipwreck dives are guided/scuba. Reef is a boat hazard — approach by dinghy.",
@@ -262,7 +255,7 @@ const SITES = [
   {
     id: "grotta-gamberi", name: "Grotta dei Gamberi", island: "Filicudi",
     lat: 38.558000, lng: 14.545000, approx: true,
-    type: "sea_cave", depth: 20, depthText: "Entrance walls ~18–20 m — freedive territory",
+    type: "snorkel", depth: 20, depthText: "Entrance walls ~18–20 m — freedive territory",
     access: "boat", anchorage: "Pecorini a Mare buoy field",
     see: "Thousands of Plesionika narval shrimps coating the cave walls; sponges and moray eels; deep cave descending to 33–39 m — only the entrance walls are snorkelable.",
     notes: "Deep cave (33–39 m full depth) — freedive/scuba territory for the main chamber. For confident freedivers only at entrance walls. Boat from Filicudi Porto.",
@@ -274,7 +267,7 @@ const SITES = [
   {
     id: "alicudi-harbour", name: "Alicudi Harbour", island: "Alicudi",
     lat: 38.532301, lng: 14.359834, approx: false,
-    type: "cove_snorkel", depth: 10, depthText: "5–15 m; drops off quickly",
+    type: "snorkel", depth: 10, depthText: "5–15 m; drops off quickly",
     access: "shore", anchorage: "Buoys off the village / 10–15 m by the dock",
     see: "Reportedly the clearest water in the archipelago — 20–30 m visibility; multicoloured seaweed and posidonia; urchins, grouper and octopus; basalt column formations.",
     notes: "Remotest island in the Aeolians — virtually no tourists. No equipment rental on island — bring everything.",
@@ -316,38 +309,126 @@ const ANCHORAGES = [
   { name: "Alicudi Porto", island: "Alicudi", lat: 38.53900, lng: 14.35100, type: "Buoys + anchorage", use: "Main stop" }
 ];
 
-// Popular recreational boat routes (classic Aeolian charter loops).
-const BOAT_ROUTES = [
-  {
-    name: "Lipari – Vulcano – Salina loop", color: "#7cc4ff",
-    points: [
-      [38.47333, 14.95733], [38.46508, 14.95858], [38.45000, 14.93800],
-      [38.44612, 14.94183], [38.41967, 14.95383], [38.41730, 14.96127],
-      [38.55283, 14.87233], [38.58000, 14.80470], [38.47333, 14.95733]
-    ]
-  },
-  {
-    name: "Panarea & islets day route", color: "#c4a6ff",
-    points: [
-      [38.63768, 15.07653], [38.62133, 15.05633], [38.62533, 15.06750],
-      [38.63860, 15.09990], [38.63795, 15.11025], [38.63890, 15.11280],
-      [38.66498, 15.11052], [38.63768, 15.07653]
-    ]
-  },
-  {
-    name: "Filicudi western route", color: "#ffcf8f",
-    points: [
-      [38.56167, 14.58567], [38.55800, 14.56500], [38.55700, 14.54900],
-      [38.582405, 14.521094], [38.557313, 14.588502]
-    ]
-  },
-  {
-    name: "Stromboli evening route", color: "#ff9f9f",
-    points: [
-      [38.79717, 15.24083], [38.80767, 15.23850], [38.8173, 15.2519]
-    ]
-  }
-];
-
 // Proximity thresholds (metres) for swim vs tender classification.
 const PROXIMITY = { swim: 400, tender: 1500 };
+
+// ===================================================================
+// Travel-tip POIs — restaurants, bars, beaches, attractions, island
+// overviews. Compiled from Adventurous Kate and Google Maps.
+// (Snorkel sites are in SITES above; these are general travel tips.)
+// ===================================================================
+const POI_TYPES = {
+  island:         { label: "Island overview",  glyph: "⊙", color: "#64748b" },
+  restaurant:     { label: "Restaurant",        glyph: "⊕", color: "#e07832" },
+  bar_hotel:      { label: "Bar & hotel",        glyph: "◈", color: "#9b59b6" },
+  bar_cafe:       { label: "Bar & café",         glyph: "◈", color: "#9b59b6" },
+  bar_restaurant: { label: "Bar & restaurant",   glyph: "⊕", color: "#e07832" },
+  winery:         { label: "Winery",             glyph: "◆", color: "#8e44ad" },
+  bakery:         { label: "Bakery",             glyph: "◇", color: "#e07832" },
+  ice_cream:      { label: "Ice cream",          glyph: "◇", color: "#e07832" },
+  beach:          { label: "Beach",              glyph: "⛱", color: "#0ea5e9" },
+  attraction:     { label: "Attraction",         glyph: "★", color: "#f59e0b" },
+  viewpoint_swim: { label: "Viewpoint / swim",  glyph: "◉", color: "#10b981" }
+};
+
+const POIS = [
+  // ---- Island overviews ----
+  { id: "ov-salina", name: "Salina", island: "Salina",
+    lat: 38.565280, lng: 14.833330, type: "island",
+    notes: "The green island and best base for the Aeolians. Upscale feel with excellent boutique hotels and Malvasia vineyards. Easy to explore by scooter. Several distinct towns — Malfa is the recommended base, also worth visiting Lingua, Pollara, Rinella and Santa Marina. Not overcrowded. Most convenient island for day trips across the archipelago.",
+    source: "Adventurous Kate" },
+  { id: "ov-stromboli", name: "Stromboli", island: "Stromboli",
+    lat: 38.798900, lng: 15.213800, type: "island",
+    notes: "The active volcano island. Car-free with black sand beaches that are the best in the Aeolians. Lava eruptions visible nightly. Small restaurant selection. The remote village of Ginostra on the far side has only 15–30 year-round residents. Best visited for 2–3 nights.",
+    source: "Adventurous Kate" },
+  { id: "ov-panarea", name: "Panarea", island: "Panarea",
+    lat: 38.635200, lng: 15.064500, type: "island",
+    notes: "The smallest and most expensive island — a longtime celebrity retreat. Very quiet even in high season. Best as a day trip from Stromboli (30 min ferry). The main activity worth doing is hiking to the Bronze Age Prehistoric Village at Punta Milazzese. Beaches are disappointing — Cala Junco is all boulders despite the widespread hype.",
+    source: "Adventurous Kate" },
+  { id: "ov-lipari", name: "Lipari", island: "Lipari",
+    lat: 38.467200, lng: 14.953700, type: "island",
+    notes: "Largest island with the most extensive day tour connections. Overtouristed in high season. The main walking street (Corso Vittorio Emanuele II) is pleasant. Worth visiting for logistics and the cat sanctuary, but Salina is a far nicer base.",
+    source: "Adventurous Kate" },
+  { id: "ov-vulcano", name: "Vulcano", island: "Vulcano",
+    lat: 38.404000, lng: 14.962300, type: "island",
+    notes: "The sulfurous island — the smell is pervasive and can be overwhelming. Worth visiting for the crater climb (free, views of all 7 islands) and natural swimming spots like Piscina di Venere. Best as a day trip only — not recommended for overnight stays.",
+    source: "Adventurous Kate" },
+  { id: "ov-alicudi", name: "Alicudi", island: "Alicudi",
+    lat: 38.540000, lng: 14.355000, type: "island",
+    notes: "The most remote island — no roads, just stairs. No cars, not even golf carts. Transport by donkey. Minimal facilities. Best visited as a day trip paired with Filicudi from Salina or Lipari. Genuinely off-grid.",
+    source: "Adventurous Kate" },
+  { id: "ov-filicudi", name: "Filicudi", island: "Filicudi",
+    lat: 38.571400, lng: 14.581600, type: "island",
+    notes: "Second most remote island but more developed than Alicudi — a few settlements and cars allowed. Known for exceptional water clarity. Outstanding for diving and swimming. Good bakery by the port. Worth a multi-night stay for those wanting real peace and quiet.",
+    source: "Adventurous Kate" },
+
+  // ---- Restaurants & bars ----
+  { id: "rest-il-gambero", name: "Il Gambero", island: "Salina",
+    lat: 38.538895, lng: 14.870337, type: "restaurant",
+    notes: "Best pane cunzatu and granita in the Aeolians — the locals' pick over the tourist-trap Da Alfredo next door. Also excellent for stuffed calamari alla Malvasia, mixed antipasti and swordfish pasta. The caffè granita con panna with liquid cream is unmissable. Sea-view tables.",
+    source: "Adventurous Kate / Google Maps" },
+  { id: "rest-ravesi", name: "Hotel Ravesi Aperitivo", island: "Salina",
+    lat: 38.578906, lng: 14.835385, type: "bar_hotel",
+    notes: "The best aperitivo in the Aeolians — draws visitors from across the island. Craft cocktails paired with Aeolian snacks including arancini and mini savoury cannolis. Infinity pool overlooking Panarea and Stromboli. Also offers sunset aperitivo cruises for hotel guests.",
+    source: "Adventurous Kate / Google Maps" },
+  { id: "rest-fenech", name: "Fenech Winery", island: "Salina",
+    lat: 38.577221, lng: 14.843311, type: "winery",
+    notes: "Informal and convivial Malvasia wine tasting run by the eccentric Francesco Fenech. Served with Aeolian salad of potatoes, capers, tomatoes and olives. Outstanding Malvasia wines, grappas and limoncello. Just walk in — no reservation needed.",
+    source: "Adventurous Kate / Google Maps" },
+  { id: "rest-bar-malvasia", name: "Bar Malvasia", island: "Salina",
+    lat: 38.578488, lng: 14.836085, type: "bar_cafe",
+    notes: "Casual all-day bar and cafe in Malfa's main square. Good granita, pane cunzatu, seafood plates and house wine. Reliable and affordable, popular with locals. Open 7am–midnight.",
+    source: "Adventurous Kate / Google Maps" },
+  { id: "rest-pinnata", name: "La Pinnata del Monsú", island: "Salina",
+    lat: 38.580299, lng: 14.830816, type: "restaurant",
+    notes: "Quirky high-end dining with sea views run by a local family. Creative Aeolian cuisine — crunchy octopus, tuna with peach and escarole, lemonmisu, caper semifreddo. Intimate and inventive. Book ahead.",
+    source: "Adventurous Kate / Google Maps" },
+  { id: "rest-cucunciu", name: "U Cucunciu", island: "Salina",
+    lat: 38.578979, lng: 14.835223, type: "restaurant",
+    notes: "Pizza and seafood restaurant next to Hotel Ravesi. Excellent pizza including the best gluten-free option on the island. Strong tuna main and prawn pasta. Reliable and well-priced.",
+    source: "Adventurous Kate / Google Maps" },
+  { id: "rest-malandrino", name: "Il Malandrino", island: "Stromboli",
+    lat: 38.798664, lng: 15.239307, type: "bar_cafe",
+    notes: "Granita and coffee right by the port — the first stop after the ferry. Good for breakfast, a quick bite or post-boat-trip drinks. Open from 6am.",
+    source: "Adventurous Kate / Google Maps" },
+  { id: "rest-bar-ingrid", name: "Bar Ingrid", island: "Stromboli",
+    lat: 38.803227, lng: 15.238224, type: "bar_cafe",
+    notes: "Casual bar and terrace with an outstanding view of the sea and Strombolicchio. Good Neapolitan pizza (evenings only), granita and croissants. Popular with locals. Open until 2am.",
+    source: "Adventurous Kate / Google Maps" },
+  { id: "rest-da-carola", name: "Bar Da Carola", island: "Panarea",
+    lat: 38.637735, lng: 15.076770, type: "bar_cafe",
+    notes: "Best granita on Panarea with artisanal flavours including the signature pesca Malvasia (peach and local wine). Right by the port. Note: expensive even by Aeolian standards — expect around €6 per granita. The quality justifies it.",
+    source: "Adventurous Kate / Google Maps" },
+  { id: "rest-panarea-bakery", name: "Panarea Bakery", island: "Panarea",
+    lat: 38.636462, lng: 15.075970, type: "bakery",
+    notes: "Try the pane disgraziata — a sandwich piled with meats and cheeses. Also good arancini, cannoli and pastries. Off the main tourist drag and popular with locals for lunch.",
+    source: "Adventurous Kate / Google Maps" },
+  { id: "rest-giardino-lipari", name: "Il Giardino di Lipari", island: "Lipari",
+    lat: 38.465473, lng: 14.955079, type: "bar_restaurant",
+    notes: "Hidden garden bar in a courtyard off the main street. Interesting craft cocktails are the highlight — the Italian vermouth with orange foam is excellent. Best visited for drinks rather than a full meal. Evenings only.",
+    source: "Adventurous Kate / Google Maps" },
+  { id: "rest-officina-mare", name: "Officina di Mare", island: "Lipari",
+    lat: 38.469699, lng: 14.954658, type: "restaurant",
+    notes: "Best cannoli in Lipari — order to go. Also excellent for swordfish, squid salad and tuna tartare if dining in. On the main Corso Vittorio Emanuele II.",
+    source: "Adventurous Kate / Google Maps" },
+  { id: "rest-gelato-antonio", name: "Il Gelato di Antonio", island: "Vulcano",
+    lat: 38.412609, lng: 14.958559, type: "ice_cream",
+    notes: "The one gelato spot in the Aeolians genuinely worth visiting — a rarity in a region dominated by granita. On the road to the crater. Perfect post-hike stop. Pistachio is the standout.",
+    source: "Adventurous Kate / Google Maps" },
+  { id: "rest-club-lea", name: "Il Club di Lea", island: "Alicudi",
+    lat: 38.534889, lng: 14.360450, type: "restaurant",
+    notes: "Home-cooked 4-course meals on a terrace with sea views, steps from the harbour. Run by Lea who also rents rooms. The best food on Alicudi. Reserve ahead — the island has very few options.",
+    source: "Adventurous Kate / Google Maps" },
+
+  // ---- Beaches ----
+  { id: "beach-spiaggia-lunga", name: "Spiaggia Lunga", island: "Stromboli",
+    lat: 38.810701, lng: 15.224417, type: "beach",
+    notes: "The best beach in the Aeolian Islands — a long expanse of sparkling black volcanic sand. Kate's top pick overall. Shimmers like diamonds. Not to be confused with the rockier Ficogrande by the port.",
+    source: "Adventurous Kate / Google Maps" },
+
+  // ---- Attractions ----
+  { id: "poi-prehistoric-village", name: "Prehistoric Village Punta Milazzese", island: "Panarea",
+    lat: 38.621500, lng: 15.063000, type: "attraction",
+    notes: "Bronze Age ruins (14th century BC) with Mycenaean pottery finds suggesting ancient trade links with Crete. Free to visit. 45-min walk from the port via Cala Zimmari. The view of the peninsula from the top is one of the best in the Aeolians.",
+    source: "Adventurous Kate / Google Maps" }
+];

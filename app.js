@@ -9,7 +9,7 @@ const state = {
   type: new Set(Object.keys(FEATURE_TYPES)), // all feature types on by default
   access: "all", // all | shore | boat
   showAnchorages: true,
-  showRoutes: true,
+  showPois: true,
   showProximity: false,
   reachableOnly: false
 };
@@ -72,8 +72,20 @@ const siteLayer = L.markerClusterGroup({
     });
   }
 }).addTo(map);
-const anchorLayer = L.layerGroup().addTo(map);
-const routeLayer  = L.layerGroup().addTo(map);
+const anchorLayer    = L.layerGroup().addTo(map);
+const poiLayer       = L.markerClusterGroup({
+  maxClusterRadius: 35,
+  showCoverageOnHover: false,
+  iconCreateFunction: (cluster) => {
+    const n = cluster.getChildCount();
+    return L.divIcon({
+      className: "",
+      html: `<div class="poi-cluster-icon">${n}</div>`,
+      iconSize: [30, 30],
+      iconAnchor: [15, 15]
+    });
+  }
+}).addTo(map);
 const proximityLayer = L.layerGroup().addTo(map);
 
 // Keep marker refs by site id for list<->map interaction
@@ -198,19 +210,37 @@ function buildAnchorages() {
   });
 }
 
-// ---- Boat routes ----
-function buildRoutes() {
-  routeLayer.clearLayers();
-  BOAT_ROUTES.forEach((r) => {
-    const line = L.polyline(r.points, {
-      color:     r.color,
-      weight:    2.5,
-      opacity:   0.75,
-      dashArray: "1 7",
-      lineCap:   "round"
+// ---- Travel-tip POIs ----
+function poiIcon(poi) {
+  const pt = POI_TYPES[poi.type];
+  return L.divIcon({
+    className: "",
+    html: `<div class="poi-marker" style="--pt:${pt.color}">${pt.glyph}</div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+    popupAnchor: [0, -14]
+  });
+}
+
+function poiPopupHtml(poi) {
+  const pt = POI_TYPES[poi.type];
+  return `<div class="pop">
+    <h3>${poi.name}</h3>
+    <div class="pop-sub">${poi.island} · ${pt.label}</div>
+    <p class="pop-poi-notes">${poi.notes}</p>
+    <div class="pop-poi-src">${poi.source}</div>
+  </div>`;
+}
+
+function buildPois() {
+  poiLayer.clearLayers();
+  POIS.forEach((poi) => {
+    const m = L.marker([poi.lat, poi.lng], {
+      icon: poiIcon(poi),
+      title: poi.name
     });
-    line.bindTooltip(r.name, { sticky: true });
-    routeLayer.addLayer(line);
+    m.bindPopup(poiPopupHtml(poi), { maxWidth: 300 });
+    poiLayer.addLayer(m);
   });
 }
 
@@ -692,7 +722,7 @@ function init() {
   buildTypeFilters();
   buildSiteMarkers();
   buildAnchorages();
-  buildRoutes();
+  buildPois();
 
   wireSegments("access-filter", "access");
 
@@ -700,9 +730,9 @@ function init() {
     state.showAnchorages = e.target.checked;
     if (e.target.checked) anchorLayer.addTo(map); else map.removeLayer(anchorLayer);
   });
-  document.getElementById("tog-routes").addEventListener("change", (e) => {
-    state.showRoutes = e.target.checked;
-    if (e.target.checked) routeLayer.addTo(map); else map.removeLayer(routeLayer);
+  document.getElementById("tog-pois").addEventListener("change", (e) => {
+    state.showPois = e.target.checked;
+    if (e.target.checked) poiLayer.addTo(map); else map.removeLayer(poiLayer);
   });
   document.getElementById("tog-proximity").addEventListener("change", (e) => {
     state.showProximity = e.target.checked;
