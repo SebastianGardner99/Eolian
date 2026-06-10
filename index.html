@@ -76,7 +76,7 @@
             <div class="wx-loading" id="wx-loading">Fetching conditions…</div>
           </div>
           <label class="check" id="wx-overlay-label" style="margin-top:10px;display:none">
-            <input type="checkbox" id="tog-wind-overlay" /> <span>Wind &amp; wave arrows on map</span>
+            <input type="checkbox" id="tog-wind-overlay" /> <span>Animate wind on map</span>
           </label>
         </section>
 
@@ -122,6 +122,35 @@
             <button id="drag-confirm-btn" class="drag-action-btn confirm" disabled>Confirm</button>
           </div>
         </div>
+      </div>
+
+      <!-- Forecast wind timeline player -->
+      <div id="wx-timeline" class="wx-timeline" hidden>
+        <div class="wxt-days" id="wxt-days"></div>
+        <div class="wxt-track-row">
+          <div class="wxt-ticks" id="wxt-ticks"></div>
+          <input type="range" id="wxt-slider" class="wxt-slider" min="0" value="0">
+        </div>
+        <div class="wxt-controls">
+          <button id="wxt-prev"  class="wxt-step-btn" title="Previous hour">&#8249;</button>
+          <span   id="wxt-time-label" class="wxt-time-label">—</span>
+          <span   id="wxt-wind-label" class="wxt-wind-label"></span>
+          <span style="flex:1"></span>
+          <button id="wxt-next"  class="wxt-step-btn" title="Next hour">&#8250;</button>
+          <button id="wxt-play"  class="wxt-play-btn" title="Play forecast">&#9654;</button>
+          <button id="wxt-close" class="wxt-close-btn" title="Close timeline">&#215;</button>
+        </div>
+      </div>
+
+      <!-- Point crosshair & top info bar (shown when map is clicked) -->
+      <div id="wx-top-bar" class="wx-top-bar" hidden>
+        <div class="wxtb-wind" id="wxtb-wind">—</div>
+        <div class="wxtb-actions">
+          <button class="wxtb-btn" disabled>Forecast for point</button>
+          <button class="wxtb-btn" disabled>Distance &amp; route</button>
+          <button class="wxtb-btn" disabled>Sounding</button>
+        </div>
+        <button id="wxtb-close" class="wxtb-close" title="Close">&#215;</button>
       </div>
     </main>
   </div>

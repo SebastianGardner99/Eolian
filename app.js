@@ -803,14 +803,20 @@ function shelterAnalysis(windDeg) {
 }
 
 async function fetchWeather() {
-  const [wxRes, marRes] = await Promise.all([
-    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${WX_LAT}&longitude=${WX_LNG}&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m,weather_code&wind_speed_unit=kn&timezone=Europe%2FRome`),
-    fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${WX_LAT}&longitude=${WX_LNG}&current=wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction&timezone=Europe%2FRome`)
-  ]);
-  if (!wxRes.ok)  throw new Error(`Weather API ${wxRes.status}`);
-  if (!marRes.ok) throw new Error(`Marine API ${marRes.status}`);
-  const [wx, mar] = await Promise.all([wxRes.json(), marRes.json()]);
-  return { wx: wx.current, mar: mar.current };
+  const ctrl  = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 12000);
+  try {
+    const [wxRes, marRes] = await Promise.all([
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${WX_LAT}&longitude=${WX_LNG}&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m,weather_code&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&timezone=Europe%2FRome&forecast_days=3`, { signal: ctrl.signal }),
+      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${WX_LAT}&longitude=${WX_LNG}&current=wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction&timezone=Europe%2FRome`, { signal: ctrl.signal })
+    ]);
+    if (!wxRes.ok)  throw new Error(`Weather API ${wxRes.status}`);
+    if (!marRes.ok) throw new Error(`Marine API ${marRes.status}`);
+    const [wx, mar] = await Promise.all([wxRes.json(), marRes.json()]);
+    return { wx: wx.current, mar: mar.current, forecast: wx.hourly };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function windArrowSvg(deg, color, size = 14) {
@@ -866,7 +872,8 @@ function renderWeather(data) {
 
   document.getElementById("wx-overlay-label").style.display = "";
   _wxData = data;
-  if (document.getElementById("tog-wind-overlay").checked) buildWindArrows(data);
+  if (document.getElementById("tog-wind-overlay").checked) startWindAnimation();
+  initForecast(data.forecast);
 }
 
 function buildWindArrows(d) {
@@ -904,6 +911,301 @@ async function loadWeather() {
   }
 }
 
+// ================================================================
+// ---- Wind particle animation engine ---------------------------
+// ================================================================
+
+let _wxCanvas = null;
+let _wxCtx = null;
+let _windAnimId = null;
+let _windAnimActive = false;
+const _windParticles = [];
+const _PARTICLE_COUNT = 140;
+
+function _setupWindCanvas() {
+  if (_wxCanvas) return;
+  const mapEl = document.getElementById("map");
+  _wxCanvas = document.createElement("canvas");
+  _wxCanvas.style.cssText = "position:absolute;top:0;left:0;pointer-events:none;z-index:640;";
+  mapEl.appendChild(_wxCanvas);
+  _wxCtx = _wxCanvas.getContext("2d");
+  _resizeWindCanvas();
+}
+
+function _resizeWindCanvas() {
+  if (!_wxCanvas) return;
+  const el = document.getElementById("map");
+  _wxCanvas.width  = el.clientWidth;
+  _wxCanvas.height = el.clientHeight;
+}
+
+function _particleColor(kn) {
+  if (kn < 11) return [94, 224, 198];
+  if (kn < 22) return [255, 215, 106];
+  if (kn < 34) return [224, 120, 50];
+  return [224, 80, 80];
+}
+
+function _spawnFromEdge(windDeg) {
+  const p = { age: 0, maxAge: 50 + Math.random() * 80, sp: 0.7 + Math.random() * 0.5 };
+  const toward = (windDeg + 180) % 360;
+  const w = _wxCanvas.width, h = _wxCanvas.height;
+  if (toward >= 315 || toward < 45)  { p.x = Math.random() * w; p.y = h + 4; }
+  else if (toward < 135)             { p.x = -4;                p.y = Math.random() * h; }
+  else if (toward < 225)             { p.x = Math.random() * w; p.y = -4; }
+  else                               { p.x = w + 4;             p.y = Math.random() * h; }
+  return p;
+}
+
+function _initParticles(windDeg) {
+  _windParticles.length = 0;
+  const w = _wxCanvas ? _wxCanvas.width  : 800;
+  const h = _wxCanvas ? _wxCanvas.height : 600;
+  for (let i = 0; i < _PARTICLE_COUNT; i++) {
+    _windParticles.push({
+      x: Math.random() * w, y: Math.random() * h,
+      age: Math.floor(Math.random() * 70),
+      maxAge: 50 + Math.random() * 80,
+      sp: 0.7 + Math.random() * 0.5
+    });
+  }
+}
+
+function _currentForecastWind() {
+  if (_forecastData && _forecastIndex != null) {
+    return { deg: _forecastData.dirs[_forecastIndex] ?? 0, kn: _forecastData.speeds[_forecastIndex] ?? 0 };
+  }
+  if (_wxData) return { deg: _wxData.wx.wind_direction_10m ?? 0, kn: _wxData.wx.wind_speed_10m ?? 0 };
+  return { deg: 0, kn: 4 };
+}
+
+function _animateWind() {
+  if (!_windAnimActive || !_wxCanvas) return;
+  const { deg, kn } = _currentForecastWind();
+  const toward = ((deg + 180) % 360) * Math.PI / 180;
+  const baseSpeed = Math.max(0.3, Math.min(kn * 0.35, 5.5));
+  const [r, g, b] = _particleColor(kn);
+  const sinT = Math.sin(toward), cosT = Math.cos(toward);
+
+  _wxCtx.fillStyle = "rgba(10,20,29,0.12)";
+  _wxCtx.fillRect(0, 0, _wxCanvas.width, _wxCanvas.height);
+
+  _windParticles.forEach((p, i) => {
+    const speed = baseSpeed * p.sp;
+    const px = p.x, py = p.y;
+    p.x += sinT * speed;
+    p.y -= cosT * speed;
+    p.age++;
+
+    const oob = p.x < -30 || p.x > _wxCanvas.width + 30 || p.y < -30 || p.y > _wxCanvas.height + 30;
+    if (p.age > p.maxAge || oob) { _windParticles[i] = _spawnFromEdge(deg); return; }
+
+    const alpha = Math.min(p.age / 12, 1) * (1 - p.age / p.maxAge) * 0.78;
+    if (alpha < 0.01) return;
+
+    _wxCtx.strokeStyle = `rgba(${r},${g},${b},${alpha.toFixed(3)})`;
+    _wxCtx.lineWidth   = 1.4;
+    _wxCtx.beginPath();
+    _wxCtx.moveTo(px, py);
+    _wxCtx.lineTo(p.x, p.y);
+    _wxCtx.stroke();
+  });
+
+  _windAnimId = requestAnimationFrame(_animateWind);
+}
+
+function startWindAnimation() {
+  _setupWindCanvas();
+  const { deg } = _currentForecastWind();
+  if (_windParticles.length === 0) _initParticles(deg);
+  _windAnimActive = true;
+  _animateWind();
+}
+
+function stopWindAnimation() {
+  _windAnimActive = false;
+  if (_windAnimId) { cancelAnimationFrame(_windAnimId); _windAnimId = null; }
+  if (_wxCtx && _wxCanvas) _wxCtx.clearRect(0, 0, _wxCanvas.width, _wxCanvas.height);
+}
+
+// ================================================================
+// ---- Forecast timeline ----------------------------------------
+// ================================================================
+
+let _forecastData  = null;
+let _forecastIndex = 0;
+let _playTimer     = null;
+
+function initForecast(hourly) {
+  if (!hourly || !hourly.time) return;
+  _forecastData = {
+    times:  hourly.time,
+    speeds: hourly.wind_speed_10m,
+    dirs:   hourly.wind_direction_10m
+  };
+
+  const now = Date.now();
+  let closest = 0, minDiff = Infinity;
+  _forecastData.times.forEach((t, i) => {
+    const diff = Math.abs(new Date(t).getTime() - now);
+    if (diff < minDiff) { minDiff = diff; closest = i; }
+  });
+  _forecastIndex = closest;
+
+  _buildTimeline();
+  syncForecastUI();
+  document.getElementById("wx-timeline").hidden = false;
+}
+
+function _buildTimeline() {
+  const { times } = _forecastData;
+  const n = times.length;
+  const slider = document.getElementById("wxt-slider");
+  slider.max   = n - 1;
+  slider.value = _forecastIndex;
+
+  const DAYS   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  const daysDiv = document.getElementById("wxt-days");
+  daysDiv.innerHTML = "";
+  let lastDay = null;
+  times.forEach((t, i) => {
+    const dt  = new Date(t);
+    const key = `${dt.getFullYear()}-${dt.getMonth()}-${dt.getDate()}`;
+    if (key !== lastDay) {
+      lastDay = key;
+      const pct  = (i / (n - 1)) * 100;
+      const span = document.createElement("span");
+      span.className = "wxt-day-label";
+      span.style.left = pct + "%";
+      span.textContent = `${DAYS[dt.getDay()]} ${dt.getDate()} ${MONTHS[dt.getMonth()]}`;
+      daysDiv.appendChild(span);
+    }
+  });
+
+  const ticksDiv = document.getElementById("wxt-ticks");
+  ticksDiv.innerHTML = "";
+  times.forEach((t, i) => {
+    const h = new Date(t).getHours();
+    if (h % 3 !== 0) return;
+    const pct  = (i / (n - 1)) * 100;
+    const tick = document.createElement("span");
+    tick.className = "wxt-tick" + (h % 6 === 0 ? " wxt-tick-major" : "");
+    tick.style.left = pct + "%";
+    if (h % 6 === 0) tick.dataset.label = h === 0 ? "0h" : `${h}h`;
+    ticksDiv.appendChild(tick);
+  });
+}
+
+function syncForecastUI() {
+  if (!_forecastData) return;
+  const t   = _forecastData.times[_forecastIndex];
+  const kn  = _forecastData.speeds[_forecastIndex];
+  const deg = _forecastData.dirs[_forecastIndex];
+  const dt  = new Date(t);
+
+  const timeStr = dt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  const dayStr  = dt.toLocaleDateString("en-GB",  { weekday: "short", day: "numeric", month: "short" });
+
+  const slider = document.getElementById("wxt-slider");
+  slider.value = _forecastIndex;
+  const pct = (_forecastIndex / Math.max(1, parseInt(slider.max))) * 100;
+  slider.style.background = `linear-gradient(to right,#5ee0c6 ${pct.toFixed(1)}%,#244257 ${pct.toFixed(1)}%)`;
+
+  document.getElementById("wxt-time-label").textContent = `${dayStr} · ${timeStr}`;
+  document.getElementById("wxt-wind-label").textContent = kn != null
+    ? `${kn.toFixed(1)} kn ${degToCompass(deg)}`
+    : "";
+
+  if (_topBarOpen) _refreshTopBar();
+}
+
+function toggleForecastPlay() {
+  const btn = document.getElementById("wxt-play");
+  if (_playTimer) {
+    clearInterval(_playTimer);
+    _playTimer = null;
+    btn.textContent = "▶";
+  } else {
+    btn.textContent = "⏸";
+    _playTimer = setInterval(() => {
+      if (!_forecastData) return;
+      _forecastIndex = (_forecastIndex + 1) % _forecastData.times.length;
+      syncForecastUI();
+    }, 700);
+  }
+}
+
+// ================================================================
+// ---- Crosshair & point info bar --------------------------------
+// ================================================================
+
+let _crosshairLatLng = null;
+let _topBarOpen      = false;
+
+function _setupCrosshair() {
+  const mapEl = document.getElementById("map");
+  const ch = document.createElement("div");
+  ch.id = "wx-crosshair";
+  ch.className = "wx-crosshair";
+  ch.hidden = true;
+  ch.innerHTML = `<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="20" cy="20" r="7" stroke="#5ee0c6" stroke-width="1.5"/>
+    <circle cx="20" cy="20" r="2"  fill="#5ee0c6"/>
+    <line x1="20" y1="0"  x2="20" y2="11" stroke="#5ee0c6" stroke-width="1.5"/>
+    <line x1="20" y1="29" x2="20" y2="40" stroke="#5ee0c6" stroke-width="1.5"/>
+    <line x1="0"  y1="20" x2="11" y2="20" stroke="#5ee0c6" stroke-width="1.5"/>
+    <line x1="29" y1="20" x2="40" y2="20" stroke="#5ee0c6" stroke-width="1.5"/>
+  </svg>`;
+  mapEl.appendChild(ch);
+
+  map.on("click", (e) => {
+    if (e.originalEvent.target.closest(".leaflet-marker-icon")) return;
+    _crosshairLatLng = e.latlng;
+    _repositionCrosshair();
+    ch.hidden = false;
+    _topBarOpen = true;
+    _refreshTopBar();
+    document.getElementById("wx-top-bar").hidden = false;
+  });
+
+  map.on("moveend zoomend", _repositionCrosshair);
+  map.on("move",            _repositionCrosshair);
+}
+
+function _repositionCrosshair() {
+  if (!_crosshairLatLng) return;
+  const ch = document.getElementById("wx-crosshair");
+  if (!ch || ch.hidden) return;
+  const pt = map.latLngToContainerPoint(_crosshairLatLng);
+  ch.style.left = (pt.x - 20) + "px";
+  ch.style.top  = (pt.y - 20) + "px";
+}
+
+function _refreshTopBar() {
+  let kn = null, deg = null;
+  if (_forecastData) {
+    kn  = _forecastData.speeds[_forecastIndex];
+    deg = _forecastData.dirs[_forecastIndex];
+  } else if (_wxData) {
+    kn  = _wxData.wx.wind_speed_10m;
+    deg = _wxData.wx.wind_direction_10m;
+  }
+  if (kn == null) return;
+  const bf = beaufortLabel(kn);
+  document.getElementById("wxtb-wind").innerHTML =
+    `<span class="wxtb-lbl">Wind:</span> <span style="color:${bf.color}">${kn.toFixed(1)} kn</span> ${degToCompass(deg)} · ${bf.label}`;
+}
+
+function _closeTopBar() {
+  _topBarOpen      = false;
+  _crosshairLatLng = null;
+  document.getElementById("wx-top-bar").hidden = true;
+  const ch = document.getElementById("wx-crosshair");
+  if (ch) ch.hidden = true;
+}
+
 // ---- Init ----
 function init() {
   loadCoordOverrides();
@@ -934,12 +1236,41 @@ function init() {
   });
 
   document.getElementById("tog-wind-overlay").addEventListener("change", (e) => {
-    if (e.target.checked) { windArrowLayer.addTo(map); if (_wxData) buildWindArrows(_wxData); }
-    else map.removeLayer(windArrowLayer);
+    if (e.target.checked) startWindAnimation(); else stopWindAnimation();
   });
   document.getElementById("wx-refresh").addEventListener("click", loadWeather);
   loadWeather();
   setInterval(loadWeather, 10 * 60 * 1000);
+
+  // Forecast timeline controls
+  document.getElementById("wxt-slider").addEventListener("input", (e) => {
+    _forecastIndex = parseInt(e.target.value);
+    syncForecastUI();
+  });
+  document.getElementById("wxt-prev").addEventListener("click", () => {
+    if (_forecastIndex > 0) { _forecastIndex--; syncForecastUI(); }
+  });
+  document.getElementById("wxt-next").addEventListener("click", () => {
+    if (_forecastData && _forecastIndex < _forecastData.times.length - 1) { _forecastIndex++; syncForecastUI(); }
+  });
+  document.getElementById("wxt-play").addEventListener("click", toggleForecastPlay);
+  document.getElementById("wxt-close").addEventListener("click", () => {
+    document.getElementById("wx-timeline").hidden = true;
+    if (_playTimer) { clearInterval(_playTimer); _playTimer = null; document.getElementById("wxt-play").textContent = "▶"; }
+  });
+
+  // Crosshair & point info bar
+  _setupCrosshair();
+  document.getElementById("wxtb-close").addEventListener("click", _closeTopBar);
+
+  // Keep canvas calibrated on map zoom/pan/resize
+  map.on("zoomend moveend", () => {
+    if (_windAnimActive) { _resizeWindCanvas(); _initParticles(_currentForecastWind().deg); }
+  });
+  window.addEventListener("resize", () => {
+    _resizeWindCanvas();
+    if (_windAnimActive) _initParticles(_currentForecastWind().deg);
+  });
 
   // Sidebar collapse
   document.getElementById("sb-toggle").addEventListener("click", () =>
