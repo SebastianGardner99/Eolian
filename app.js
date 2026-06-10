@@ -934,10 +934,10 @@ function _setupWindCanvas() {
 
 function _resizeWindCanvas() {
   if (!_wxCanvas) return;
-  const w = _wxCanvas.offsetWidth  || document.getElementById("map").offsetWidth;
-  const h = _wxCanvas.offsetHeight || document.getElementById("map").offsetHeight;
-  _wxCanvas.width  = w;
-  _wxCanvas.height = h;
+  const rect = document.getElementById("map").getBoundingClientRect();
+  const w = Math.round(rect.width);
+  const h = Math.round(rect.height);
+  if (w > 0 && h > 0) { _wxCanvas.width = w; _wxCanvas.height = h; }
 }
 
 function _particleColor(kn) {
@@ -947,15 +947,14 @@ function _particleColor(kn) {
   return [224, 80, 80];
 }
 
-function _spawnFromEdge(windDeg) {
-  const p = { age: 0, maxAge: 50 + Math.random() * 80, sp: 0.7 + Math.random() * 0.5 };
-  const toward = (windDeg + 180) % 360;
-  const w = _wxCanvas.width, h = _wxCanvas.height;
-  if (toward >= 315 || toward < 45)  { p.x = Math.random() * w; p.y = h + 4; }
-  else if (toward < 135)             { p.x = -4;                p.y = Math.random() * h; }
-  else if (toward < 225)             { p.x = Math.random() * w; p.y = -4; }
-  else                               { p.x = w + 4;             p.y = Math.random() * h; }
-  return p;
+function _spawnRandom() {
+  return {
+    x: Math.random() * _wxCanvas.width,
+    y: Math.random() * _wxCanvas.height,
+    age: 0,
+    maxAge: 60 + Math.random() * 90,
+    sp: 0.7 + Math.random() * 0.5
+  };
 }
 
 function _initParticles(windDeg) {
@@ -998,7 +997,7 @@ function _animateWind() {
     p.age++;
 
     const oob = p.x < -30 || p.x > _wxCanvas.width + 30 || p.y < -30 || p.y > _wxCanvas.height + 30;
-    if (p.age > p.maxAge || oob) { _windParticles[i] = _spawnFromEdge(deg); return; }
+    if (p.age > p.maxAge || oob) { _windParticles[i] = _spawnRandom(); return; }
 
     const alpha = Math.min(p.age / 12, 1) * (1 - p.age / p.maxAge) * 0.78;
     if (alpha < 0.01) return;
@@ -1016,8 +1015,9 @@ function _animateWind() {
 
 function startWindAnimation() {
   _setupWindCanvas();
+  _resizeWindCanvas();
   const { deg } = _currentForecastWind();
-  if (_windParticles.length === 0) _initParticles(deg);
+  _initParticles(deg);
   _windAnimActive = true;
   _animateWind();
 }
