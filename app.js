@@ -8,7 +8,7 @@ const state = {
   depth: { surface: true, mid: true, lower: true },
   type: new Set(Object.keys(FEATURE_TYPES)),
   poiTypes: new Set(Object.keys(POI_TYPES)),
-  showAnchorages: true,
+  showAnchorages: false,
   reachableOnly: false
 };
 
@@ -97,7 +97,7 @@ const siteLayer = L.markerClusterGroup({
     });
   }
 }).addTo(map);
-const anchorLayer    = L.layerGroup().addTo(map);
+const anchorLayer    = L.layerGroup(); // not added to map by default (checkbox starts unchecked)
 const poiLayer       = L.markerClusterGroup({
   maxClusterRadius: 35,
   showCoverageOnHover: false,
@@ -684,6 +684,7 @@ function buildLayerToggles() {
   const poiCounts = {};
   POIS.forEach((p) => { poiCounts[p.type] = (poiCounts[p.type] || 0) + 1; });
 
+  // Site-type chips (snorkel, beach) — snorkel chip also syncs shipwrecks
   Object.entries(FEATURE_TYPES).forEach(([key, ft]) => {
     if (!siteCounts[key]) return;
     const div = document.createElement("div");
@@ -693,24 +694,42 @@ function buildLayerToggles() {
       <span class="tc-label">${ft.label}</span>
       <span class="tc-count">${siteCounts[key]}</span>`;
     div.addEventListener("click", () => {
-      if (state.type.has(key)) { state.type.delete(key); div.classList.add("off"); }
-      else { state.type.add(key); div.classList.remove("off"); }
+      const turningOn = !state.type.has(key);
+      if (turningOn) { state.type.add(key); div.classList.remove("off"); }
+      else            { state.type.delete(key); div.classList.add("off"); }
+      // Snorkel and shipwrecks travel together
+      if (key === "snorkel") {
+        const wreckChip = document.querySelector('[data-poitype="shipwreck"]');
+        if (turningOn) { state.poiTypes.add("shipwreck");    if (wreckChip) wreckChip.classList.remove("off"); }
+        else           { state.poiTypes.delete("shipwreck"); if (wreckChip) wreckChip.classList.add("off"); }
+      }
       applyFilters();
     });
     wrap.appendChild(div);
   });
 
+  // POI-type chips — restaurant_michelin merged into restaurant chip
   Object.entries(POI_TYPES).forEach(([key, pt]) => {
-    if (!poiCounts[key]) return;
+    if (key === "restaurant_michelin") return; // merged into restaurant
+    const count = (poiCounts[key] || 0) + (key === "restaurant" ? (poiCounts["restaurant_michelin"] || 0) : 0);
+    if (!count) return;
     const div = document.createElement("div");
     div.className = "type-chip";
     div.dataset.poitype = key;
     div.innerHTML = `<span class="tc-glyph" style="color:${pt.color}">${pt.glyph}</span>
       <span class="tc-label">${pt.label}</span>
-      <span class="tc-count">${poiCounts[key]}</span>`;
+      <span class="tc-count">${count}</span>`;
     div.addEventListener("click", () => {
-      if (state.poiTypes.has(key)) { state.poiTypes.delete(key); div.classList.add("off"); }
-      else { state.poiTypes.add(key); div.classList.remove("off"); }
+      const isOn = state.poiTypes.has(key);
+      if (isOn) {
+        state.poiTypes.delete(key);
+        if (key === "restaurant") state.poiTypes.delete("restaurant_michelin");
+        div.classList.add("off");
+      } else {
+        state.poiTypes.add(key);
+        if (key === "restaurant") state.poiTypes.add("restaurant_michelin");
+        div.classList.remove("off");
+      }
       applyFilters();
     });
     wrap.appendChild(div);
@@ -1156,40 +1175,63 @@ const _userSiteMarkers   = new Map();   // id → Leaflet marker
 let   _userSites         = [];
 let   _addSitePlacing    = false;
 let   _addSitePlaceClean = null;        // cleanup fn for placement mode
+let   _onUserSitesChanged = null;       // hook called after each save
 
 function loadUserSites() {
   try { _userSites = JSON.parse(localStorage.getItem(_USER_SITES_KEY) || "[]"); }
   catch (_) { _userSites = []; }
   _userSites.forEach(_buildUserSiteMarker);
+  if (_onUserSitesChanged) _onUserSitesChanged();
 }
 
 function _saveUserSites() {
   localStorage.setItem(_USER_SITES_KEY, JSON.stringify(_userSites));
+  if (_onUserSitesChanged) _onUserSitesChanged();
+}
+
+function _userSiteIconInfo(site) {
+  if (FEATURE_TYPES[site.type]) {
+    return { glyph: FEATURE_TYPES[site.type].glyph, color: DEPTH_BANDS[bandFor(site.depth || 5)].color };
+  }
+  const pt = POI_TYPES[site.type];
+  if (pt) return { glyph: pt.glyph, color: pt.color };
+  return { glyph: "★", color: "#9b9b9b" }; // fallback for custom "other" types
 }
 
 function _buildUserSiteMarker(site) {
-  const ft    = FEATURE_TYPES[site.type] || FEATURE_TYPES.snorkel;
-  const color = DEPTH_BANDS[bandFor(site.depth || 5)].color;
+  const { glyph, color } = _userSiteIconInfo(site);
   const m = L.marker([site.lat, site.lng], {
     icon: L.divIcon({
       className: "",
       html: `<div class="depth-marker user-site-marker" style="--mk:${color}">
-               <span class="mk-glyph">${ft.glyph}</span>
+               <span class="mk-glyph">${glyph}</span>
              </div>`,
       iconSize: [26, 26], iconAnchor: [13, 13]
     })
   });
 
   m.bindPopup(() => {
+    const displayType = site.otherType || (POI_TYPES[site.type] ? POI_TYPES[site.type].label : (FEATURE_TYPES[site.type] ? FEATURE_TYPES[site.type].label : site.type));
     const div = document.createElement("div");
     div.className = "pop";
     div.innerHTML = `
       <h3>${site.name}</h3>
-      <div class="pop-sub">${site.island || "Aeolian Islands"} · <em>Your site</em></div>
+      <div class="pop-sub">${site.island || "Aeolian Islands"} · <em>${displayType} — your site</em></div>
       ${site.notes ? `<p class="pop-poi-notes">${site.notes}</p>` : ""}
-      <div style="display:flex;gap:8px;margin-top:8px">
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button class="pop-btn" data-action="copy" title="Copy formatted JS for pasting into data.js">📋 Copy code</button>
         <button class="pop-btn" data-action="remove" style="color:#e07070">Remove</button>
-      </div>`;
+      </div>
+      <p style="font-size:.66rem;color:var(--ink-mute);margin-top:6px;line-height:1.4">
+        "Copy code" copies this entry as JS you can paste into data.js to make it permanent.
+      </p>`;
+    div.querySelector("[data-action=copy]").addEventListener("click", () => {
+      const code = _formatSiteAsCode(site);
+      navigator.clipboard.writeText(code).then(() => {
+        div.querySelector("[data-action=copy]").textContent = "✓ Copied!";
+        setTimeout(() => { div.querySelector("[data-action=copy]").textContent = "📋 Copy code"; }, 2000);
+      }).catch(() => { prompt("Copy this code:", code); });
+    });
     div.querySelector("[data-action=remove]").addEventListener("click", () => {
       if (confirm(`Remove "${site.name}"?`)) {
         _removeUserSite(site.id);
@@ -1201,6 +1243,48 @@ function _buildUserSiteMarker(site) {
 
   m.addTo(map);
   _userSiteMarkers.set(site.id, m);
+}
+
+// Format a user-added site as a JS object ready to paste into data.js
+function _formatSiteAsCode(site) {
+  const isWaterType = !!FEATURE_TYPES[site.type];
+  const typeVal  = site.type === "other" ? (site.otherType || "attraction") : site.type;
+  const indent   = "  ";
+  if (isWaterType) {
+    return `${indent}{ id: "${site.id}", name: ${JSON.stringify(site.name)}, island: ${JSON.stringify(site.island || "Aeolian Islands")},\n` +
+      `${indent}  lat: ${site.lat.toFixed(6)}, lng: ${site.lng.toFixed(6)}, approx: true,\n` +
+      `${indent}  type: ${JSON.stringify(site.type)}, depth: ${site.depth || 5}, depthText: "— user-added",\n` +
+      `${indent}  access: ${JSON.stringify(site.access || "shore")}, anchorage: "",\n` +
+      `${indent}  see: "", notes: ${JSON.stringify(site.notes || "")},\n` +
+      `${indent}  desc: ${JSON.stringify(site.notes || site.name)},\n` +
+      `${indent}  sources: [] },`;
+  } else {
+    return `${indent}{ id: "${site.id}", name: ${JSON.stringify(site.name)}, island: ${JSON.stringify(site.island || "Aeolian Islands")},\n` +
+      `${indent}  lat: ${site.lat.toFixed(6)}, lng: ${site.lng.toFixed(6)}, type: ${JSON.stringify(typeVal)},\n` +
+      `${indent}  notes: ${JSON.stringify(site.notes || "")}, source: "User-added" },`;
+  }
+}
+
+// Download all user-added sites as a JS snippet
+function exportUserSites() {
+  if (!_userSites.length) return;
+  const water = _userSites.filter((s) => FEATURE_TYPES[s.type]);
+  const pois  = _userSites.filter((s) => !FEATURE_TYPES[s.type]);
+  let out = "// ---- User-added sites — paste into data.js ----\n\n";
+  if (water.length) {
+    out += "// Add these to the SITES array:\n";
+    out += water.map(_formatSiteAsCode).join("\n") + "\n\n";
+  }
+  if (pois.length) {
+    out += "// Add these to the POIS array:\n";
+    out += pois.map(_formatSiteAsCode).join("\n") + "\n";
+  }
+  const blob = new Blob([out], { type: "text/javascript" });
+  const a    = document.createElement("a");
+  a.href     = URL.createObjectURL(blob);
+  a.download = "user-sites.js";
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 function _removeUserSite(id) {
@@ -1272,6 +1356,8 @@ function _enterPlacementMode(siteData) {
   _addSitePlaceClean = () => map.off("click", onMapClick);
 }
 
+const _WATER_TYPES = new Set(["snorkel", "beach", "cliff_jump"]);
+
 function initAddSite() {
   const sbBtn = document.getElementById("add-site-sb-btn");
   sbBtn.addEventListener("click", () => {
@@ -1287,6 +1373,13 @@ function initAddSite() {
     cancelAddSitePlacement();
   });
 
+  // Show/hide "Other" text field and depth field based on chosen type
+  document.getElementById("ash-type").addEventListener("change", () => {
+    const t = document.getElementById("ash-type").value;
+    document.getElementById("ash-other-field").hidden = (t !== "other");
+    document.getElementById("ash-depth-field").hidden = !_WATER_TYPES.has(t);
+  });
+
   document.getElementById("ash-place-btn").addEventListener("click", () => {
     const nameEl = document.getElementById("ash-name");
     const name   = nameEl.value.trim();
@@ -1297,22 +1390,57 @@ function initAddSite() {
       return;
     }
 
+    const typeVal  = document.getElementById("ash-type").value;
+    const otherVal = document.getElementById("ash-other").value.trim();
+    if (typeVal === "other" && !otherVal) {
+      const otherEl = document.getElementById("ash-other");
+      otherEl.focus();
+      otherEl.style.borderColor = "rgba(239,68,68,.6)";
+      otherEl.addEventListener("input", () => { otherEl.style.borderColor = ""; }, { once: true });
+      return;
+    }
+
     const siteData = {
       name,
-      island: document.getElementById("ash-island").value || "Aeolian Islands",
-      type:   document.getElementById("ash-type").value,
-      depth:  parseFloat(document.getElementById("ash-depth").value),
-      access: document.getElementById("ash-access").value,
-      notes:  document.getElementById("ash-notes").value.trim()
+      island:    document.getElementById("ash-island").value || "Aeolian Islands",
+      type:      typeVal,
+      otherType: typeVal === "other" ? otherVal : undefined,
+      depth:     _WATER_TYPES.has(typeVal) ? parseFloat(document.getElementById("ash-depth").value) : 5,
+      access:    document.getElementById("ash-access").value,
+      notes:     document.getElementById("ash-notes").value.trim()
     };
 
     // Reset form
     document.getElementById("ash-name").value  = "";
     document.getElementById("ash-notes").value = "";
+    document.getElementById("ash-other").value = "";
     document.getElementById("ash-island").selectedIndex = 0;
+    document.getElementById("ash-type").selectedIndex   = 0;
+    document.getElementById("ash-other-field").hidden   = true;
+    document.getElementById("ash-depth-field").hidden   = false;
 
     _enterPlacementMode(siteData);
   });
+
+  // Export button — shown beneath "Add a site" when user has pinned sites saved
+  function _refreshExportBtn() {
+    const existing = document.getElementById("user-sites-export-btn");
+    if (_userSites.length > 0 && !existing) {
+      const btn = document.createElement("button");
+      btn.id = "user-sites-export-btn";
+      btn.className = "add-site-sb-toggle";
+      btn.style.cssText = "margin-top:4px;border-color:rgba(99,179,237,.4);color:#2b6cb0;";
+      btn.textContent = "↓ Export my sites as JS";
+      btn.title = "Download user-added sites as a JS snippet to paste into data.js";
+      btn.addEventListener("click", exportUserSites);
+      document.getElementById("add-site-sb-btn").insertAdjacentElement("afterend", btn);
+    } else if (_userSites.length === 0 && existing) {
+      existing.remove();
+    }
+  }
+
+  _onUserSitesChanged = _refreshExportBtn;
+  _refreshExportBtn();
 }
 
 // ---- Init ----

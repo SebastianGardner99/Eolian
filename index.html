@@ -36,6 +36,18 @@
       </header>
 
       <div class="sb-scroll">
+        <!-- Wind & Sea — first so live conditions are immediately visible -->
+        <section class="panel" id="wx-panel">
+          <h2 class="panel-title">Wind &amp; Sea <button id="wx-refresh" class="wx-refresh-btn" title="Refresh">↻</button></h2>
+          <p class="panel-sub">Live conditions · Open-Meteo marine forecast</p>
+          <div id="wx-body" class="wx-body">
+            <div class="wx-loading" id="wx-loading">Fetching conditions…</div>
+          </div>
+          <label class="check" id="wx-overlay-label" style="margin-top:10px;display:none">
+            <input type="checkbox" id="tog-wind-overlay" /> <span>Animate wind on map</span>
+          </label>
+        </section>
+
         <!-- Depth legend -->
         <section class="panel">
           <h2 class="panel-title">Snorkel depth</h2>
@@ -48,21 +60,9 @@
           <h2 class="panel-title">Show on map</h2>
           <div class="types" id="layer-toggles"></div>
           <div class="layer-sep"></div>
-          <label class="check"><input type="checkbox" id="tog-anchorages" checked /> <span>Boat anchorages</span><i class="dot anchor"></i></label>
+          <label class="check"><input type="checkbox" id="tog-anchorages" /> <span>Boat anchorages</span><i class="dot anchor"></i></label>
           <label class="check"><input type="checkbox" id="tog-reachable" /> <span>Only sites swimmable from an anchorage</span></label>
           <button id="add-site-sb-btn" class="add-site-sb-toggle">✚ Add a site</button>
-        </section>
-
-        <!-- Wind & Sea -->
-        <section class="panel" id="wx-panel">
-          <h2 class="panel-title">Wind &amp; Sea <button id="wx-refresh" class="wx-refresh-btn" title="Refresh">↻</button></h2>
-          <p class="panel-sub">Live conditions · Open-Meteo marine forecast</p>
-          <div id="wx-body" class="wx-body">
-            <div class="wx-loading" id="wx-loading">Fetching conditions…</div>
-          </div>
-          <label class="check" id="wx-overlay-label" style="margin-top:10px;display:none">
-            <input type="checkbox" id="tog-wind-overlay" /> <span>Animate wind on map</span>
-          </label>
         </section>
 
         <!-- Site list -->
@@ -141,23 +141,30 @@
               <option>Alicudi</option><option>Panarea islets</option>
             </select>
           </label>
-          <div class="ash-row">
-            <label class="ash-field">
-              <span class="ash-label">Type</span>
-              <select id="ash-type" class="ash-input">
-                <option value="snorkel">Snorkel site</option>
-                <option value="beach">Beach</option>
-              </select>
-            </label>
-            <label class="ash-field">
-              <span class="ash-label">Depth</span>
-              <select id="ash-depth" class="ash-input">
-                <option value="3">0–5 m (surface)</option>
-                <option value="7" selected>5–10 m (mid)</option>
-                <option value="15">10–20 m (deeper)</option>
-              </select>
-            </label>
-          </div>
+          <label class="ash-field">
+            <span class="ash-label">Type</span>
+            <select id="ash-type" class="ash-input">
+              <option value="snorkel">Snorkel site</option>
+              <option value="beach">Beach</option>
+              <option value="cliff_jump">Cliff / rock jump</option>
+              <option value="restaurant">Restaurant</option>
+              <option value="bar_restaurant">Bar &amp; restaurant</option>
+              <option value="bakery">Bakery</option>
+              <option value="other">Other (specify below)</option>
+            </select>
+          </label>
+          <label class="ash-field" id="ash-other-field" hidden>
+            <span class="ash-label">Describe the type</span>
+            <input id="ash-other" class="ash-input" type="text" placeholder="e.g. viewpoint, cave, ruins…" autocomplete="off" />
+          </label>
+          <label class="ash-field" id="ash-depth-field">
+            <span class="ash-label">Depth</span>
+            <select id="ash-depth" class="ash-input">
+              <option value="3">0–5 m (surface)</option>
+              <option value="7" selected>5–10 m (mid)</option>
+              <option value="15">10–20 m (deeper)</option>
+            </select>
+          </label>
           <label class="ash-field">
             <span class="ash-label">Access</span>
             <select id="ash-access" class="ash-input">
