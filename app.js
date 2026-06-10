@@ -7,7 +7,6 @@
 const state = {
   depth: { surface: true, mid: true, lower: true },
   type: new Set(Object.keys(FEATURE_TYPES)), // all feature types on by default
-  access: "all", // all | shore | boat
   showAnchorages: true,
   showPois: true,
   showProximity: false,
@@ -278,10 +277,9 @@ function buildProximity(visibleSites) {
 
 // ---- Filtering ----
 function siteVisible(site) {
-  if (!state.depth[site._band])                             return false;
-  if (!state.type.has(site.type))                           return false;
-  if (state.access !== "all" && site.access !== state.access) return false;
-  if (state.reachableOnly && site._reach.level === "none")  return false;
+  if (!state.depth[site._band])                            return false;
+  if (!state.type.has(site.type))                          return false;
+  if (state.reachableOnly && site._reach.level === "none") return false;
   return true;
 }
 
@@ -701,23 +699,6 @@ function buildTypeFilters() {
     });
     wrap.appendChild(div);
   });
-
-  const ctrls = document.createElement("div");
-  ctrls.className = "type-ctrls";
-  ctrls.innerHTML = `<button type="button" data-act="all">All</button>
-    <button type="button" data-act="none">None</button>`;
-  ctrls.addEventListener("click", (e) => {
-    const btn = e.target.closest("button");
-    if (!btn) return;
-    const on = btn.dataset.act === "all";
-    wrap.querySelectorAll(".type-chip").forEach((c) => {
-      const key = c.dataset.type;
-      if (on) { state.type.add(key); c.classList.remove("off"); }
-      else    { state.type.delete(key); c.classList.add("off"); }
-    });
-    applyFilters();
-  });
-  wrap.appendChild(ctrls);
 }
 
 // ---- Coordinate overrides (localStorage) ----
@@ -1054,7 +1035,9 @@ function initForecast(hourly) {
 
   _buildTimeline();
   syncForecastUI();
-  document.getElementById("wx-timeline").hidden = false;
+  if (document.getElementById("tog-wind-overlay").checked) {
+    document.getElementById("wx-timeline").hidden = false;
+  }
 }
 
 function _buildTimeline() {
@@ -1118,7 +1101,6 @@ function syncForecastUI() {
     ? `${kn.toFixed(1)} kn ${degToCompass(deg)}`
     : "";
 
-  if (_topBarOpen) _refreshTopBar();
 }
 
 function toggleForecastPlay() {
@@ -1138,72 +1120,161 @@ function toggleForecastPlay() {
 }
 
 // ================================================================
-// ---- Crosshair & point info bar --------------------------------
+// ---- Add-a-site (user-created pins) ----------------------------
 // ================================================================
 
-let _crosshairLatLng = null;
-let _topBarOpen      = false;
+const _USER_SITES_KEY    = "aeolian_user_sites";
+const _userSiteMarkers   = new Map();   // id → Leaflet marker
+let   _userSites         = [];
+let   _addSitePlacing    = false;
+let   _addSitePlaceClean = null;        // cleanup fn for placement mode
 
-function _setupCrosshair() {
-  const mapEl = document.getElementById("map");
-  const ch = document.createElement("div");
-  ch.id = "wx-crosshair";
-  ch.className = "wx-crosshair";
-  ch.hidden = true;
-  ch.innerHTML = `<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="20" cy="20" r="7" stroke="#5ee0c6" stroke-width="1.5"/>
-    <circle cx="20" cy="20" r="2"  fill="#5ee0c6"/>
-    <line x1="20" y1="0"  x2="20" y2="11" stroke="#5ee0c6" stroke-width="1.5"/>
-    <line x1="20" y1="29" x2="20" y2="40" stroke="#5ee0c6" stroke-width="1.5"/>
-    <line x1="0"  y1="20" x2="11" y2="20" stroke="#5ee0c6" stroke-width="1.5"/>
-    <line x1="29" y1="20" x2="40" y2="20" stroke="#5ee0c6" stroke-width="1.5"/>
-  </svg>`;
-  mapEl.appendChild(ch);
+function loadUserSites() {
+  try { _userSites = JSON.parse(localStorage.getItem(_USER_SITES_KEY) || "[]"); }
+  catch (_) { _userSites = []; }
+  _userSites.forEach(_buildUserSiteMarker);
+}
 
-  map.on("click", (e) => {
-    if (e.originalEvent.target.closest(".leaflet-marker-icon")) return;
-    _crosshairLatLng = e.latlng;
-    _repositionCrosshair();
-    ch.hidden = false;
-    _topBarOpen = true;
-    _refreshTopBar();
-    document.getElementById("wx-top-bar").hidden = false;
+function _saveUserSites() {
+  localStorage.setItem(_USER_SITES_KEY, JSON.stringify(_userSites));
+}
+
+function _buildUserSiteMarker(site) {
+  const ft    = FEATURE_TYPES[site.type] || FEATURE_TYPES.snorkel;
+  const color = DEPTH_BANDS[bandFor(site.depth || 5)].color;
+  const m = L.marker([site.lat, site.lng], {
+    icon: L.divIcon({
+      className: "",
+      html: `<div class="depth-marker user-site-marker" style="--mk:${color}">
+               <span class="mk-glyph">${ft.glyph}</span>
+             </div>`,
+      iconSize: [26, 26], iconAnchor: [13, 13]
+    })
   });
 
-  map.on("moveend zoomend", _repositionCrosshair);
-  map.on("move",            _repositionCrosshair);
+  m.bindPopup(() => {
+    const div = document.createElement("div");
+    div.className = "pop";
+    div.innerHTML = `
+      <h3>${site.name}</h3>
+      <div class="pop-sub">${site.island || "Aeolian Islands"} · <em>Your site</em></div>
+      ${site.notes ? `<p class="pop-poi-notes">${site.notes}</p>` : ""}
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="pop-btn" data-action="remove" style="color:#e07070">Remove</button>
+      </div>`;
+    div.querySelector("[data-action=remove]").addEventListener("click", () => {
+      if (confirm(`Remove "${site.name}"?`)) {
+        _removeUserSite(site.id);
+        m.closePopup();
+      }
+    });
+    return div;
+  });
+
+  m.addTo(map);
+  _userSiteMarkers.set(site.id, m);
 }
 
-function _repositionCrosshair() {
-  if (!_crosshairLatLng) return;
-  const ch = document.getElementById("wx-crosshair");
-  if (!ch || ch.hidden) return;
-  const pt = map.latLngToContainerPoint(_crosshairLatLng);
-  ch.style.left = (pt.x - 20) + "px";
-  ch.style.top  = (pt.y - 20) + "px";
+function _removeUserSite(id) {
+  const m = _userSiteMarkers.get(id);
+  if (m) { map.removeLayer(m); _userSiteMarkers.delete(id); }
+  _userSites = _userSites.filter((s) => s.id !== id);
+  _saveUserSites();
 }
 
-function _refreshTopBar() {
-  let kn = null, deg = null;
-  if (_forecastData) {
-    kn  = _forecastData.speeds[_forecastIndex];
-    deg = _forecastData.dirs[_forecastIndex];
-  } else if (_wxData) {
-    kn  = _wxData.wx.wind_speed_10m;
-    deg = _wxData.wx.wind_direction_10m;
+function _showAddSiteHUD() {
+  document.getElementById("add-site-hud").hidden = false;
+  setTimeout(() => document.getElementById("ash-name").focus(), 50);
+}
+
+function _hideAddSiteHUD() {
+  document.getElementById("add-site-hud").hidden = true;
+}
+
+function cancelAddSitePlacement() {
+  if (!_addSitePlacing) return;
+  _addSitePlacing = false;
+  if (_addSitePlaceClean) { _addSitePlaceClean(); _addSitePlaceClean = null; }
+  document.getElementById("map").classList.remove("add-site-mode");
+  const banner = document.getElementById("add-site-place-banner");
+  if (banner) banner.remove();
+}
+
+function _enterPlacementMode(siteData) {
+  _hideAddSiteHUD();
+  _addSitePlacing = true;
+
+  const banner = document.createElement("div");
+  banner.id = "add-site-place-banner";
+  banner.className = "add-site-place-banner";
+  banner.innerHTML = `Click on the map to place the pin &nbsp;
+    <button id="ash-place-cancel" style="background:none;border:none;color:inherit;font-size:1rem;cursor:pointer;padding:0 0 0 8px;line-height:1">&#215;</button>`;
+  document.getElementById("map-wrap").appendChild(banner);
+  banner.querySelector("#ash-place-cancel").addEventListener("click", cancelAddSitePlacement);
+
+  document.getElementById("map").classList.add("add-site-mode");
+
+  function onMapClick(e) {
+    if (!_addSitePlacing) return;
+    _addSitePlacing = false;
+    _addSitePlaceClean = null;
+    document.getElementById("map").classList.remove("add-site-mode");
+    banner.remove();
+
+    const site = {
+      ...siteData,
+      id:  "user-" + Date.now(),
+      lat: e.latlng.lat,
+      lng: e.latlng.lng
+    };
+
+    _userSites.push(site);
+    _saveUserSites();
+    _buildUserSiteMarker(site);
+
+    setTimeout(() => {
+      const m = _userSiteMarkers.get(site.id);
+      if (m) m.openPopup();
+    }, 120);
   }
-  if (kn == null) return;
-  const bf = beaufortLabel(kn);
-  document.getElementById("wxtb-wind").innerHTML =
-    `<span class="wxtb-lbl">Wind:</span> <span style="color:${bf.color}">${kn.toFixed(1)} kn</span> ${degToCompass(deg)} · ${bf.label}`;
+
+  map.once("click", onMapClick);
+  _addSitePlaceClean = () => map.off("click", onMapClick);
 }
 
-function _closeTopBar() {
-  _topBarOpen      = false;
-  _crosshairLatLng = null;
-  document.getElementById("wx-top-bar").hidden = true;
-  const ch = document.getElementById("wx-crosshair");
-  if (ch) ch.hidden = true;
+function initAddSite() {
+  document.getElementById("add-site-btn").addEventListener("click", _showAddSiteHUD);
+  document.getElementById("ash-cancel").addEventListener("click", () => {
+    _hideAddSiteHUD();
+    cancelAddSitePlacement();
+  });
+
+  document.getElementById("ash-place-btn").addEventListener("click", () => {
+    const nameEl = document.getElementById("ash-name");
+    const name   = nameEl.value.trim();
+    if (!name) {
+      nameEl.focus();
+      nameEl.style.borderColor = "rgba(239,68,68,.6)";
+      nameEl.addEventListener("input", () => { nameEl.style.borderColor = ""; }, { once: true });
+      return;
+    }
+
+    const siteData = {
+      name,
+      island: document.getElementById("ash-island").value || "Aeolian Islands",
+      type:   document.getElementById("ash-type").value,
+      depth:  parseFloat(document.getElementById("ash-depth").value),
+      access: document.getElementById("ash-access").value,
+      notes:  document.getElementById("ash-notes").value.trim()
+    };
+
+    // Reset form
+    document.getElementById("ash-name").value  = "";
+    document.getElementById("ash-notes").value = "";
+    document.getElementById("ash-island").selectedIndex = 0;
+
+    _enterPlacementMode(siteData);
+  });
 }
 
 // ---- Init ----
@@ -1214,8 +1285,6 @@ function init() {
   buildSiteMarkers();
   buildAnchorages();
   buildPois();
-
-  wireSegments("access-filter", "access");
 
   document.getElementById("tog-anchorages").addEventListener("change", (e) => {
     state.showAnchorages = e.target.checked;
@@ -1236,7 +1305,14 @@ function init() {
   });
 
   document.getElementById("tog-wind-overlay").addEventListener("change", (e) => {
-    if (e.target.checked) startWindAnimation(); else stopWindAnimation();
+    if (e.target.checked) {
+      startWindAnimation();
+      if (_forecastData) document.getElementById("wx-timeline").hidden = false;
+    } else {
+      stopWindAnimation();
+      document.getElementById("wx-timeline").hidden = true;
+      if (_playTimer) { clearInterval(_playTimer); _playTimer = null; document.getElementById("wxt-play").textContent = "▶"; }
+    }
   });
   document.getElementById("wx-refresh").addEventListener("click", loadWeather);
   loadWeather();
@@ -1258,10 +1334,6 @@ function init() {
     document.getElementById("wx-timeline").hidden = true;
     if (_playTimer) { clearInterval(_playTimer); _playTimer = null; document.getElementById("wxt-play").textContent = "▶"; }
   });
-
-  // Crosshair & point info bar
-  _setupCrosshair();
-  document.getElementById("wxtb-close").addEventListener("click", _closeTopBar);
 
   // Keep canvas calibrated on map zoom/pan/resize
   map.on("zoomend moveend", () => {
@@ -1285,6 +1357,7 @@ function init() {
   document.getElementById("drawer-scrim").addEventListener("click", closeDrawer);
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
+      if (_addSitePlacing) { cancelAddSitePlacement(); return; }
       if (_dragState) { cancelDrag(); return; }
       closeDrawer();
     }
@@ -1293,6 +1366,9 @@ function init() {
   // Drag banner buttons
   document.getElementById("drag-confirm-btn").addEventListener("click", confirmDrag);
   document.getElementById("drag-cancel-btn").addEventListener("click", cancelDrag);
+
+  initAddSite();
+  loadUserSites();
 
   applyFilters();
 }

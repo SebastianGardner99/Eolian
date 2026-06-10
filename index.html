@@ -49,16 +49,6 @@
           <div class="types" id="type-filter"></div>
         </section>
 
-        <!-- Access filter -->
-        <section class="panel">
-          <h2 class="panel-title">Getting there</h2>
-          <div class="seg" id="access-filter" role="group" aria-label="Access filter">
-            <button data-access="all" class="seg-btn active">All</button>
-            <button data-access="shore" class="seg-btn">Shore entry</button>
-            <button data-access="boat" class="seg-btn">Anchor &amp; swim</button>
-          </div>
-        </section>
-
         <!-- Overlays -->
         <section class="panel">
           <h2 class="panel-title">Overlays</h2>
@@ -84,6 +74,7 @@
         <section class="panel">
           <div class="list-head">
             <h2 class="panel-title">Sites <span id="site-count" class="count">0</span></h2>
+            <button id="add-site-btn" class="add-site-btn" title="Add a site">+ Add</button>
           </div>
           <ul id="site-list" class="site-list"></ul>
         </section>
@@ -142,15 +133,59 @@
         </div>
       </div>
 
-      <!-- Point crosshair & top info bar (shown when map is clicked) -->
-      <div id="wx-top-bar" class="wx-top-bar" hidden>
-        <div class="wxtb-wind" id="wxtb-wind">—</div>
-        <div class="wxtb-actions">
-          <button class="wxtb-btn" disabled>Forecast for point</button>
-          <button class="wxtb-btn" disabled>Distance &amp; route</button>
-          <button class="wxtb-btn" disabled>Sounding</button>
+      <!-- Add-site HUD form -->
+      <div id="add-site-hud" class="add-site-hud" hidden>
+        <div class="ash-header">
+          <span class="ash-title">Add a site</span>
+          <button id="ash-cancel" class="ash-cancel-btn" title="Cancel">&#215;</button>
         </div>
-        <button id="wxtb-close" class="wxtb-close" title="Close">&#215;</button>
+        <div class="ash-body">
+          <label class="ash-field">
+            <span class="ash-label">Name</span>
+            <input id="ash-name" class="ash-input" type="text" placeholder="e.g. Secret cove" autocomplete="off" />
+          </label>
+          <label class="ash-field">
+            <span class="ash-label">Island</span>
+            <select id="ash-island" class="ash-input">
+              <option value="">Select island…</option>
+              <option>Lipari</option><option>Vulcano</option><option>Salina</option>
+              <option>Stromboli</option><option>Panarea</option><option>Filicudi</option>
+              <option>Alicudi</option><option>Panarea islets</option>
+            </select>
+          </label>
+          <div class="ash-row">
+            <label class="ash-field">
+              <span class="ash-label">Type</span>
+              <select id="ash-type" class="ash-input">
+                <option value="snorkel">Snorkel site</option>
+                <option value="beach">Beach</option>
+              </select>
+            </label>
+            <label class="ash-field">
+              <span class="ash-label">Depth</span>
+              <select id="ash-depth" class="ash-input">
+                <option value="3">0–5 m (surface)</option>
+                <option value="7" selected>5–10 m (mid)</option>
+                <option value="15">10–20 m (deeper)</option>
+              </select>
+            </label>
+          </div>
+          <label class="ash-field">
+            <span class="ash-label">Access</span>
+            <select id="ash-access" class="ash-input">
+              <option value="shore">Shore entry</option>
+              <option value="boat">Boat only</option>
+            </select>
+          </label>
+          <label class="ash-field">
+            <span class="ash-label">Notes <span class="ash-optional">(optional)</span></span>
+            <textarea id="ash-notes" class="ash-input ash-textarea" rows="3" placeholder="What makes this spot special?"></textarea>
+          </label>
+        </div>
+        <div class="ash-footer">
+          <p class="ash-hint">Fill in the details, then click to drop the pin.</p>
+          <button id="ash-place-btn" class="ash-place-btn">Place pin on map ›</button>
+        </div>
       </div>
     </main>
   </div>
