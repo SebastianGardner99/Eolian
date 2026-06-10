@@ -59,7 +59,7 @@ body {
   border-bottom: 1px solid var(--line);
 }
 .brand { display: flex; align-items: center; gap: 12px; }
-.brand-mark { width: 36px; height: 36px; color: var(--shallow); flex: 0 0 36px; }
+.brand-mark { width: 36px; height: 36px; flex: 0 0 36px; border-radius: 8px; object-fit: cover; display: block; }
 .brand-text h1 {
   font-family: 'Fraunces', serif; font-weight: 600;
   font-size: 1.18rem; line-height: 1.05; letter-spacing: .01em;
