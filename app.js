@@ -88,8 +88,9 @@ const poiLayer       = L.markerClusterGroup({
 }).addTo(map);
 const proximityLayer = L.layerGroup().addTo(map);
 
-// Keep marker refs by site id for list<->map interaction
-const markerById = {};
+// Keep marker refs by id for list<->map interaction
+const markerById    = {};
+const poiMarkerById = {};
 
 // ---- Helpers ----
 function haversine(lat1, lng1, lat2, lng2) {
@@ -234,12 +235,14 @@ function poiPopupHtml(poi) {
 
 function buildPois() {
   poiLayer.clearLayers();
+  for (const id in poiMarkerById) delete poiMarkerById[id];
   POIS.forEach((poi) => {
     const m = L.marker([poi.lat, poi.lng], {
       icon: poiIcon(poi),
       title: poi.name
     });
     m.bindPopup(poiPopupHtml(poi), { maxWidth: 300 });
+    poiMarkerById[poi.id] = m;
     poiLayer.addLayer(m);
   });
 }
@@ -293,18 +296,28 @@ function applyFilters() {
       if (siteLayer.hasLayer(m)) siteLayer.removeLayer(m);
     }
   });
+
+  if (state.showPois) {
+    if (!map.hasLayer(poiLayer)) poiLayer.addTo(map);
+  } else {
+    if (map.hasLayer(poiLayer)) map.removeLayer(poiLayer);
+  }
+
+  const visiblePois = state.showPois ? POIS : [];
   buildProximity(visible);
-  renderList(visible);
-  document.getElementById("site-count").textContent = visible.length;
+  renderList(visible, visiblePois);
+  document.getElementById("site-count").textContent = visible.length + visiblePois.length;
 }
 
 // ---- Site list ----
-function renderList(visible) {
+function renderList(visible, visiblePois = []) {
   const ul = document.getElementById("site-list");
   ul.innerHTML = "";
+
   const sorted = [...visible].sort((a, b) =>
     (a.depth - b.depth) || a.name.localeCompare(b.name)
   );
+
   sorted.forEach((site) => {
     const ft = FEATURE_TYPES[site.type];
     const li = document.createElement("li");
@@ -325,7 +338,36 @@ function renderList(visible) {
     });
     ul.appendChild(li);
   });
-  if (!sorted.length) {
+
+  if (visiblePois.length) {
+    const divider = document.createElement("li");
+    divider.className = "list-divider";
+    divider.textContent = "Restaurants & Attractions";
+    ul.appendChild(divider);
+
+    const sortedPois = [...visiblePois].sort((a, b) =>
+      a.island.localeCompare(b.island) || a.name.localeCompare(b.name)
+    );
+    sortedPois.forEach((poi) => {
+      const pt = POI_TYPES[poi.type];
+      const li = document.createElement("li");
+      li.className = "site-li poi-li";
+      li.style.borderLeftColor = pt.color;
+      li.innerHTML = `<h3><span class="li-glyph">${pt.glyph}</span> ${poi.name}</h3>
+        <div class="meta"><span>${poi.island}</span><span>${pt.label}</span></div>`;
+      li.addEventListener("click", () => {
+        const m = poiMarkerById[poi.id];
+        if (m) {
+          poiLayer.zoomToShowLayer(m, () => m.openPopup());
+        } else {
+          map.flyTo([poi.lat, poi.lng], 15, { duration: 0.8 });
+        }
+      });
+      ul.appendChild(li);
+    });
+  }
+
+  if (!sorted.length && !visiblePois.length) {
     ul.innerHTML = `<li style="color:var(--ink-mute);font-size:.82rem;padding:10px 2px">No sites match these filters.</li>`;
   }
 }
@@ -715,6 +757,153 @@ function wireSegments(containerId, key) {
   });
 }
 
+// ================================================================
+// ---- Wind & Sea conditions ------------------------------------
+// ================================================================
+const WX_LAT = 38.48;
+const WX_LNG = 14.95;
+const windArrowLayer = L.layerGroup();
+let _wxData = null;
+
+function beaufortLabel(knots) {
+  if (knots < 1)  return { label: "Calm",          color: "#5ee0c6", score: 0 };
+  if (knots < 4)  return { label: "Light air",      color: "#5ee0c6", score: 1 };
+  if (knots < 7)  return { label: "Light breeze",   color: "#5ee0c6", score: 2 };
+  if (knots < 11) return { label: "Gentle breeze",  color: "#43c6e8", score: 3 };
+  if (knots < 16) return { label: "Mod. breeze",    color: "#43c6e8", score: 4 };
+  if (knots < 22) return { label: "Fresh breeze",   color: "#ffd76a", score: 5 };
+  if (knots < 28) return { label: "Strong breeze",  color: "#ffd76a", score: 6 };
+  if (knots < 34) return { label: "Near gale",      color: "#e07832", score: 7 };
+  return               { label: "Gale+",            color: "#e05050", score: 8 };
+}
+
+function snorkelVerdict(windKnots, waveM) {
+  if (windKnots <= 10 && waveM <= 0.3) return { text: "✓ Excellent conditions",   cls: "wx-good" };
+  if (windKnots <= 15 && waveM <= 0.6) return { text: "◐ Decent — check spots",   cls: "wx-ok"   };
+  if (windKnots <= 20 && waveM <= 1.0) return { text: "⚠ Marginal — shore spots", cls: "wx-warn" };
+  return                                      { text: "✕ Poor — wait it out",      cls: "wx-bad"  };
+}
+
+function degToCompass(deg) {
+  if (deg == null) return "—";
+  const dirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+  return dirs[Math.round(deg / 22.5) % 16];
+}
+
+function shelterAnalysis(windDeg) {
+  if (windDeg == null || !ANCHORAGES) return [];
+  const sheltered = [];
+  ANCHORAGES.forEach((a) => {
+    if (a.openBearing == null) return;
+    const d    = Math.abs(a.openBearing - windDeg) % 360;
+    const diff = d > 180 ? 360 - d : d;
+    if (diff > 90) sheltered.push(a.name);
+  });
+  return sheltered;
+}
+
+async function fetchWeather() {
+  const [wxRes, marRes] = await Promise.all([
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${WX_LAT}&longitude=${WX_LNG}&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m,weather_code&wind_speed_unit=kn&timezone=Europe%2FRome`),
+    fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${WX_LAT}&longitude=${WX_LNG}&current=wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction&timezone=Europe%2FRome`)
+  ]);
+  if (!wxRes.ok)  throw new Error(`Weather API ${wxRes.status}`);
+  if (!marRes.ok) throw new Error(`Marine API ${marRes.status}`);
+  const [wx, mar] = await Promise.all([wxRes.json(), marRes.json()]);
+  return { wx: wx.current, mar: mar.current };
+}
+
+function windArrowSvg(deg, color, size = 14) {
+  if (deg == null) return "";
+  const rot = (deg + 180) % 360;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 14 14" style="transform:rotate(${rot}deg);flex-shrink:0" fill="${color}"><path d="M7 1 L4 10 L7 7.5 L10 10 Z"/></svg>`;
+}
+
+function renderWeather(data) {
+  const wx  = data.wx;
+  const mar = data.mar;
+
+  const windKnots  = wx.wind_speed_10m        ?? 0;
+  const windDir    = wx.wind_direction_10m;
+  const gustKnots  = wx.wind_gusts_10m        ?? windKnots;
+  const waveM      = mar.wave_height          ?? 0;
+  const waveDir    = mar.wave_direction;
+  const wavePeriod = mar.wave_period          ?? 0;
+  const swellM     = mar.swell_wave_height    ?? 0;
+  const swellDir   = mar.swell_wave_direction;
+
+  const bf       = beaufortLabel(windKnots);
+  const verdict  = snorkelVerdict(windKnots, waveM);
+  const sheltered = shelterAnalysis(windDir);
+  const now = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+
+  const shelterHtml = sheltered.length
+    ? `<div class="wx-shelter-label">Sheltered bays now</div>${sheltered.map((n) => `<span class="wx-shelter-bay">${n}</span>`).join("")}`
+    : `<div class="wx-shelter-none">Add <code>openBearing</code> to anchorages in data.js to enable shelter analysis.</div>`;
+
+  document.getElementById("wx-body").innerHTML = `
+    <div class="wx-verdict ${verdict.cls}">${verdict.text}</div>
+    <div class="wx-grid">
+      <div class="wx-cell">
+        <div class="wx-cell-label">Wind</div>
+        <div class="wx-cell-val">${windArrowSvg(windDir, bf.color)}<span style="color:${bf.color}">${windKnots.toFixed(1)} kn</span></div>
+        <div class="wx-cell-sub">${degToCompass(windDir)} · gusts ${gustKnots.toFixed(1)} kn</div>
+      </div>
+      <div class="wx-cell">
+        <div class="wx-cell-label">Waves</div>
+        <div class="wx-cell-val">${windArrowSvg(waveDir, "#6fa8ff")}<span style="color:#6fa8ff">${waveM.toFixed(1)} m</span></div>
+        <div class="wx-cell-sub">${degToCompass(waveDir)} · ${wavePeriod.toFixed(0)} s</div>
+      </div>
+      <div class="wx-cell">
+        <div class="wx-cell-label">Swell</div>
+        <div class="wx-cell-val">${windArrowSvg(swellDir, "#7c8cf0")}<span style="color:#7c8cf0">${swellM.toFixed(1)} m</span></div>
+        <div class="wx-cell-sub">${degToCompass(swellDir)}</div>
+      </div>
+    </div>
+    <div class="wx-shelter">${shelterHtml}</div>
+    <div class="wx-updated">Updated ${now}</div>
+  `;
+
+  document.getElementById("wx-overlay-label").style.display = "";
+  _wxData = data;
+  if (document.getElementById("tog-wind-overlay").checked) buildWindArrows(data);
+}
+
+function buildWindArrows(d) {
+  windArrowLayer.clearLayers();
+  const windRot = ((d.wx.wind_direction_10m  ?? 0) + 180) % 360;
+  const waveRot = ((d.mar.wave_direction     ?? 0) + 180) % 360;
+
+  const points = [
+    ...ANCHORAGES.map((a) => [a.lat, a.lng]),
+    [38.50, 14.70], [38.70, 14.90], [38.65, 15.20], [38.37, 14.97]
+  ];
+
+  points.forEach(([lat, lng]) => {
+    const icon = L.divIcon({
+      className: "",
+      html: `<div style="display:flex;flex-direction:column;align-items:center;gap:1px;pointer-events:none">
+        <svg width="20" height="20" viewBox="0 0 20 20" style="transform:rotate(${windRot}deg)" fill="#ffd76a"><path d="M10 1 L5 15 L10 11 L15 15 Z"/></svg>
+        <svg width="16" height="16" viewBox="0 0 16 16" style="transform:rotate(${waveRot}deg)" fill="#6fa8ff"><path d="M8 1 L4 12 L8 9 L12 12 Z"/></svg>
+      </div>`,
+      iconSize: [20, 40],
+      iconAnchor: [10, 20]
+    });
+    L.marker([lat, lng], { icon, interactive: false }).addTo(windArrowLayer);
+  });
+}
+
+async function loadWeather() {
+  const body = document.getElementById("wx-body");
+  body.innerHTML = '<div class="wx-loading" id="wx-loading">Fetching conditions…</div>';
+  try {
+    const data = await fetchWeather();
+    renderWeather(data);
+  } catch (err) {
+    body.innerHTML = `<div class="wx-error">Could not load conditions — check your connection.<br><small>${err.message}</small></div>`;
+  }
+}
+
 // ---- Init ----
 function init() {
   loadCoordOverrides();
@@ -732,7 +921,7 @@ function init() {
   });
   document.getElementById("tog-pois").addEventListener("change", (e) => {
     state.showPois = e.target.checked;
-    if (e.target.checked) poiLayer.addTo(map); else map.removeLayer(poiLayer);
+    applyFilters();
   });
   document.getElementById("tog-proximity").addEventListener("change", (e) => {
     state.showProximity = e.target.checked;
@@ -743,6 +932,14 @@ function init() {
     state.reachableOnly = e.target.checked;
     applyFilters();
   });
+
+  document.getElementById("tog-wind-overlay").addEventListener("change", (e) => {
+    if (e.target.checked) { windArrowLayer.addTo(map); if (_wxData) buildWindArrows(_wxData); }
+    else map.removeLayer(windArrowLayer);
+  });
+  document.getElementById("wx-refresh").addEventListener("click", loadWeather);
+  loadWeather();
+  setInterval(loadWeather, 10 * 60 * 1000);
 
   // Sidebar collapse
   document.getElementById("sb-toggle").addEventListener("click", () =>

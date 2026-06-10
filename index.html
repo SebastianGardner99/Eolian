@@ -68,6 +68,18 @@
           <label class="check"><input type="checkbox" id="tog-reachable" /> <span>Only sites swimmable from an anchorage</span></label>
         </section>
 
+        <!-- Wind & Sea -->
+        <section class="panel" id="wx-panel">
+          <h2 class="panel-title">Wind &amp; Sea <button id="wx-refresh" class="wx-refresh-btn" title="Refresh">↻</button></h2>
+          <p class="panel-sub">Live conditions · Open-Meteo marine forecast</p>
+          <div id="wx-body" class="wx-body">
+            <div class="wx-loading" id="wx-loading">Fetching conditions…</div>
+          </div>
+          <label class="check" id="wx-overlay-label" style="margin-top:10px;display:none">
+            <input type="checkbox" id="tog-wind-overlay" /> <span>Wind &amp; wave arrows on map</span>
+          </label>
+        </section>
+
         <!-- Site list -->
         <section class="panel">
           <div class="list-head">
