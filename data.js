@@ -332,7 +332,11 @@ const POI_TYPES = {
   sport:               { label: "Sport facility",     glyph: "◎", color: "#3b82f6" },
   cliff_jump:          { label: "Cliff / rock jump",  glyph: "▼", color: "#ef4444" },
   shipwreck:           { label: "Shipwreck",          glyph: "⊗", color: "#78716c" },
-  restaurant_michelin: { label: "Michelin restaurant",glyph: "⊕", color: "#f59e0b" }
+  restaurant_michelin: { label: "Michelin restaurant",glyph: "⊕", color: "#f59e0b" },
+  wine_bar:            { label: "Wine bar & deli",    glyph: "◆", color: "#8e44ad" },
+  viewpoint:           { label: "Viewpoint",          glyph: "◉", color: "#10b981" },
+  piazza:              { label: "Piazza / landmark",  glyph: "◎", color: "#64748b" },
+  hotel:               { label: "Hotel",              glyph: "◈", color: "#0ea5e9" }
 };
 
 const POIS = [
@@ -612,5 +616,47 @@ const POIS = [
     see: "Alicudi's only real beach — medium pebbles, clear water, near-total solitude even in season.",
     notes: "~1 km walk north from the port on a clear stepped path past the church (~50 min), or by boat. No facilities at all. Seabed slightly silty.",
     desc: "A wild, facility-free pebble cove on Alicudi's NE coast — you'll likely have it to yourself.",
-    sources: [["Google Maps — Spiaggia Bazzina", "https://maps.google.com/?cid=bazzina"]] }
+    sources: [["Google Maps — Spiaggia Bazzina", "https://maps.google.com/?cid=bazzina"]] },
+
+  // ---- Lipari highlights (Silvia's guide) ----
+  { id: "poi-castello-lipari", name: "Castello di Lipari & Museo Archeologico Eoliano", island: "Lipari",
+    lat: 38.467220, lng: 14.957275, type: "attraction",
+    notes: "The fortified acropolis above town — Cathedral of St Bartholomew, Norman cloister and the Luigi Bernabò Brea Archaeological Museum, one of the Mediterranean's great collections: the Capistello and Capo Graziano wreck amphorae, Greek theatre masks, prehistoric finds from across the islands. €10 adults. Open daily 9:00–19:30 (Sun to 13:00). Allow 1.5–2 hours. The walk around the castle walls is free and panoramic.",
+    source: "Google Maps (verified)" },
+  { id: "poi-terme-san-calogero", name: "Terme di San Calogero", island: "Lipari",
+    lat: 38.477545, lng: 14.909740, type: "attraction",
+    notes: "Ancient thermal baths near Pianoconte — a Mycenaean-era tholos considered among the oldest thermal structures in the Mediterranean, active as a spa until the 1970s. Formally closed but elderly volunteer custodians give informal tours for a donation, and the spring still runs hot. The story outshines the ruins — worth 30 min on an island loop.",
+    source: "Google Maps (site formally closed — informal visits)" },
+  { id: "poi-marina-corta", name: "Marina Corta", island: "Lipari",
+    lat: 38.463807, lng: 14.957828, type: "piazza",
+    notes: "The postcard piazza — fishing boats, the Church of the Souls in Purgatory out on the pier, bars and restaurants around the square. Departure point for island excursion boats. The quintessential Aeolian people-watching spot.",
+    source: "Google Maps (verified)" },
+  { id: "poi-piazza-mazzini", name: "Piazza Mazzini terrace (Sopra la Civita)", island: "Lipari",
+    lat: 38.466000, lng: 14.957700, type: "viewpoint", approx: true,
+    notes: "Panoramic terrace above the town reached by a picturesque lane off the corso. The square has reportedly been under works since 2011 — manage expectations, but the view over the rooftops to Marina Corta is lovely.",
+    source: "Approximate — lane above the Civita; not a Google-listed feature" },
+  { id: "poi-quattrocchi", name: "Belvedere Quattrocchi", island: "Lipari",
+    lat: 38.464994, lng: 14.929693, type: "viewpoint",
+    notes: "THE Lipari viewpoint — 'four eyes' panorama over the Pietra Lunga and Pietra Menalda faraglioni with Vulcano smoking behind. Small kiosk with drinks. Reachable by scooter, bus (~€2) or a steep underpublicised footpath. Sunset is the moment.",
+    source: "Google Maps (verified)" },
+  { id: "poi-chiesa-quattropani", name: "Chiesa Vecchia di Quattropani", island: "Lipari",
+    lat: 38.515157, lng: 14.918074, type: "viewpoint",
+    notes: "The 'old church' above Quattropani — a tiny sanctuary with a sweeping view of all six other Aeolian islands from one spot. Locals' sunset secret; bring a layer for the wind. Big car park, tight access roads.",
+    source: "Google Maps (verified)" },
+  { id: "poi-bar-dambra", name: "Bar D'Ambra", island: "Lipari",
+    lat: 38.464306, lng: 14.956582, type: "bar_cafe",
+    notes: "Artisan pasticceria just off Marina Corta — granitas, brioche con gelato, free aperitivo snacks, harbour views. Open daily 7am–3am.",
+    source: "Google Maps (verified)" },
+  { id: "rest-del-vicolo", name: "Trattoria del Vicolo", island: "Lipari",
+    lat: 38.469094, lng: 14.955045, type: "restaurant",
+    notes: "Family-run seafood trattoria in Vico Ulisse off the main corso — known for busiate with clams and pistachio pesto. Open daily 19:30–22:30 (dinner only). Recent reviews are mixed: atmosphere and fish praised, service speed and portions criticised. Book ahead.",
+    source: "Google Maps (verified — mixed recent reviews)" },
+  { id: "poi-essepiu", name: "Essepiù (Enoteca Saja Silvana)", island: "Lipari",
+    lat: 38.465853, lng: 14.956175, type: "wine_bar",
+    notes: "Small enoteca and typical-products shop on Vico Carrubella off Via Garibaldi — wines, panini, cheeses and the homemade caper jam. Open daily 10:00–midnight. Ratings have slipped (3.8★) with reports of slow service — best as a products/wine stop rather than a full dinner.",
+    source: "Google Maps (verified — declining reviews)" },
+  { id: "hotel-cutimare", name: "Hotel Cutimare", island: "Lipari",
+    lat: 38.518887, lng: 14.942502, type: "hotel",
+    notes: "Seafront hotel at Acquacalda with a roof terrace looking straight at Salina, Panarea and Stromboli. 4.4★. Great value and breakfast, but Acquacalda is remote (20 min from town, two restaurants, last bus ~8pm) — a base for peace, not nightlife. Beach loungers for guests directly opposite.",
+    source: "Google Maps (verified)" }
 ];
