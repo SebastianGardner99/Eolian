@@ -4,10 +4,14 @@
 // without scuba, and reachable by swimming from a moored/anchored
 // boat (or from shore). Compiled from sailing/charter skipper guides,
 // turismoeolie.com, UNESCO Smart Education Sicily, Navily, Smithsonian
-// GVP, Wikipedia and first-hand travel/snorkel blogs (June 2026).
+// GVP, Wikipedia, PADI dive-centre maps (KML) and first-hand
+// travel/snorkel blogs (June 2026).
 //
 // COORDINATE NOTE: where exact GPS isn't published, coordinates are
 // derived from the cove/stack/cape and marked approx:true (±0.2–1 km).
+// PADI KML positions (dive-shop buoy points) take precedence where
+// names overlap. Depths (topDepth/maxDepth, metres) follow dive-centre
+// bathymetric descriptions.
 // ===================================================================
 
 // Snorkel depth bands (m): how deep the interesting feature sits.
@@ -60,27 +64,77 @@ const SITES = [
     desc: "An active fumarole beach where volcanic gases bubble up through the seabed and rock cracks — eerie and unique, 20 minutes from San Pietro.",
     sources: [["turismoeolie — What to see at Panarea", "http://aeolianislands.turismoeolie.com/what-to-see-at-panarea/"], ["Smithsonian GVP — Panarea", "https://volcano.si.edu/showreport.cfm?doi=10.5479%2Fsi.GVP.BGVN200210-211041"]]
   },
+  {
+    id: "pietra-nave", name: "Pietra Nave", island: "Panarea",
+    lat: 38.646973, lng: 15.063047, approx: false,
+    type: "snorkel", depth: 8, depthText: "0–15 m — walls from the surface", topDepth: 0, maxDepth: 35,
+    access: "boat", anchorage: "Panarea Nord buoy field / Ditella",
+    see: "Stack off Panarea's north coast — colonised walls dropping straight from the surface; sponges and Astroides in the shallows.",
+    notes: "PADI dive-map position. Pairs with the Calcara fumarole beach for a north-coast circuit. Walls continue to ~35 m for divers.",
+    desc: "A sea stack off Panarea's north coast with walls dropping from the surface — snorkel the shallows, divers continue below.",
+    sources: [["PADI dive-centre KML (Panarea)", "https://www.padi.com/"], ["viaggipersub — Eolie dive sites", "https://www.viaggipersub.it/vacanze-subacquee/europa/immersioni-diving-in-italia/sicilia/eolie/"]]
+  },
+  {
+    id: "scoglio-aquila", name: "Scoglio dell'Aquila", island: "Panarea",
+    lat: 38.646765, lng: 15.065553, approx: false,
+    type: "snorkel", depth: 8, depthText: "0–12 m — snorkelable upper walls", topDepth: 0, maxDepth: 30,
+    access: "boat", anchorage: "Panarea Nord buoy field / Ditella",
+    see: "'Eagle rock', 200 m east of Pietra Nave — same north-coast cluster; clear water over rocky shallows.",
+    notes: "PADI dive-map position. Snorkel both rocks from one anchorage.",
+    desc: "The 'eagle rock' beside Pietra Nave on Panarea's north coast — snorkelable upper walls in clear water.",
+    sources: [["PADI dive-centre KML (Panarea)", "https://www.padi.com/"]]
+  },
+  {
+    id: "formiche-panarea", name: "Le Formiche di Panarea", island: "Panarea",
+    lat: 38.627534, lng: 15.083459, approx: false,
+    type: "snorkel", depth: 4, depthText: "0–8 m — 'a graceful natural pool'", topDepth: 0, maxDepth: 25,
+    access: "boat", anchorage: "Tender from Cala Zimmari / Cala Milazzese",
+    see: "Barely-awash rocks — the tips of a large shoal; emerald, sun-lit shallows described by dive guides as a graceful swimming pool; encrusting sponges in red, yellow and orange.",
+    notes: "PADI position — SE of Panarea between the coast and the islets. NAVIGATION HAZARD: the rocks are nearly invisible in any swell; approach by dinghy, keep watch posted. Easy 25 m max for divers.",
+    desc: "Awash rocks SE of Panarea whose sunlit emerald shallows are a natural swimming pool — superb easy snorkelling, but a real navigation hazard in swell.",
+    sources: [["PADI dive-centre KML (Panarea)", "https://www.padi.com/"], ["Aeolian dive guides — Le Formiche", "https://www.viaggipersub.it/vacanze-subacquee/europa/immersioni-diving-in-italia/sicilia/eolie/"]]
+  },
 
   // ---------------- PANAREA ISLETS ----------------
   {
-    id: "lisca-bianca-bottaro", name: "Lisca Bianca / Bottaro Fumaroles", island: "Panarea islets",
+    id: "lisca-bianca-bottaro", name: "Bottaro Fumarole Field (Lisca Bianca)", island: "Panarea islets",
     lat: 38.638300, lng: 15.110300, approx: true,
-    type: "snorkel", depth: 9, depthText: "5–13 m — volcanic gas vents",
+    type: "snorkel", depth: 9, depthText: "5–13 m — volcanic gas vents", topDepth: 5, maxDepth: 13,
     access: "boat", anchorage: "Between the two islets (5–13 m sand)",
-    see: "Volcanic CO₂ vents bubbling vigorously from the sandy seabed; milky water near vent centres; the Grotta degli Innamorati (Lovers' Arch) swim-through on Lisca Bianca.",
-    notes: "Anchor between the two islets. No landing on either. Limit time at vent centres. Gas caution: sulphur present. Note: a 19th-century English merchant ship lies at ~43 m on the east side of the anchorage — bow, propeller and large groupers; scuba only.",
+    see: "Volcanic CO₂ vents bubbling vigorously from the sandy seabed (the field documented after the 2002 submarine eruption); milky water near vent centres; the Grotta degli Innamorati (Lovers' Arch) swim-through on Lisca Bianca.",
+    notes: "Anchor between the two islets. No landing on either. Limit time at vent centres. Gas caution: sulphur present. The Llanishen wreck lies at ~43 m on the east side — scuba only (see POIs). A second buoyed vent site, 'Fumarola', lies 600 m west (separate pin).",
     desc: "The most spectacular underwater fumarole field in the archipelago — CO₂ vents cascade bubbles between two islets, plus a Lovers' Arch swim-through.",
     sources: [["UNESCO Smart Education — Lisca Bianca", "https://www.smarteducationunescosicilia.it/en/isole-eolie/the-underwater-fumarolic-activity-of-lisca-bianca/"], ["turismoeolie — Boating Panarea", "http://aeolianislands.turismoeolie.com/boating-panarea/"]]
   },
   {
+    id: "fumarola-panarea", name: "Fumarola (dive-buoy vent site)", island: "Panarea islets",
+    lat: 38.639234, lng: 15.103149, approx: false,
+    type: "snorkel", depth: 8, depthText: "5–15 m — buoyed hydrothermal vents", topDepth: 5, maxDepth: 15,
+    access: "boat", anchorage: "Between Dattilo and Bottaro",
+    see: "The dive centres' buoyed vent site between Dattilo and the islets — bubble curtains over pale hydrothermally-stained sand; the whole shelf here is geothermally active.",
+    notes: "PADI dive-map position. Same gas cautions as the Bottaro field. Often calmer than the Bottaro anchorage when the islet channel is busy.",
+    desc: "The dive shops' buoyed fumarole site between Dattilo and Bottaro — a quieter alternative vent field on the same hydrothermal shelf.",
+    sources: [["PADI dive-centre KML (Panarea)", "https://www.padi.com/"], ["Smithsonian GVP — Panarea", "https://volcano.si.edu/showreport.cfm?doi=10.5479%2Fsi.GVP.BGVN200210-211041"]]
+  },
+  {
     id: "dattilo", name: "Dattilo", island: "Panarea islets",
-    lat: 38.638400, lng: 15.099500, approx: false,
-    type: "snorkel", depth: 10, depthText: "5–15 m — volcanic rock formations",
+    lat: 38.640441, lng: 15.095260, approx: false,
+    type: "snorkel", depth: 10, depthText: "5–15 m — volcanic rock formations", topDepth: 0, maxDepth: 30,
     access: "boat", anchorage: "Off the east coast (5–13 m sand)",
     see: "Tall narrow volcanic islet; interesting rock formations and cave passages below the waterline; colourful sponges and algae in clear water.",
-    notes: "No landing; navigate carefully around shallow rocks. Best combined with Lisca Bianca in a single boat day.",
-    desc: "A tall narrow volcanic islet east of San Pietro with rock formations below the waterline — best combined with Lisca Bianca fumaroles in one day.",
-    sources: [["turismoeolie — Boating Panarea", "http://aeolianislands.turismoeolie.com/boating-panarea/"], ["GetYourGuide — Aeolian water sports", "https://www.getyourguide.com/aeolian-islands-l3446/water-sports-tc55/"]]
+    notes: "PADI dive point is the NW side (this pin); boats moor off the E coast (see anchorages). No landing; navigate carefully around shallow rocks. Best combined with the fumarole fields in a single boat day.",
+    desc: "A tall narrow volcanic islet east of San Pietro with rock formations below the waterline — dive point on the NW side, anchorage on the E.",
+    sources: [["PADI dive-centre KML (Panarea)", "https://www.padi.com/"], ["turismoeolie — Boating Panarea", "http://aeolianislands.turismoeolie.com/boating-panarea/"]]
+  },
+  {
+    id: "panarelli", name: "Panarelli", island: "Panarea islets",
+    lat: 38.641859, lng: 15.099116, approx: false,
+    type: "snorkel", depth: 6, depthText: "0–12 m — awash rock cluster", topDepth: 0, maxDepth: 30,
+    access: "boat", anchorage: "Tender from Dattilo anchorage",
+    see: "Rock cluster breaking the surface between Dattilo and Basiluzzo — snorkelable tops, colonised flanks; the deeper Secca di Panarelli lies just east (see POIs).",
+    notes: "PADI dive-map position. Approach by dinghy; rocks awash.",
+    desc: "A cluster of awash rocks between Dattilo and Basiluzzo — snorkel the tops, divers work the flanks and the secca just east.",
+    sources: [["PADI dive-centre KML (Panarea)", "https://www.padi.com/"]]
   },
   {
     id: "basiluzzo", name: "Basiluzzo", island: "Panarea islets",
@@ -92,6 +146,16 @@ const SITES = [
     desc: "Uninhabited volcanic islet with Roman ruins and an ancient boat-house visible on the seabed at 7.5 m — the only snorkelable Roman archaeology in the archipelago.",
     sources: [["turismoeolie — Boating Panarea", "http://aeolianislands.turismoeolie.com/boating-panarea/"], ["GetYourGuide — Aeolian water sports", "https://www.getyourguide.com/aeolian-islands-l3446/water-sports-tc55/"]]
   },
+  {
+    id: "punta-levante-basiluzzo", name: "Punta Levante (Basiluzzo)", island: "Panarea islets",
+    lat: 38.660712, lng: 15.118557, approx: false,
+    type: "snorkel", depth: 6, depthText: "0–12 m — eastern point shelf", topDepth: 0, maxDepth: 40,
+    access: "boat", anchorage: "Basiluzzo E coast buoy field",
+    see: "Basiluzzo's eastern point — shallow shelf close to the submerged Roman remains; walls falling away east for divers.",
+    notes: "PADI dive-map position. Pairs with the navalia ruins for a full Basiluzzo circuit.",
+    desc: "The eastern point of Basiluzzo — a freedive-friendly shelf near the Roman remains, with diveable walls beyond.",
+    sources: [["PADI dive-centre KML (Panarea)", "https://www.padi.com/"]]
+  },
 
   // ---------------- LIPARI ----------------
   {
@@ -99,7 +163,7 @@ const SITES = [
     lat: 38.370390, lng: 14.997942, approx: false,
     type: "snorkel", depth: 8, depthText: "5–12 m — rocky seabed under black cliffs",
     access: "shore", anchorage: "Off the cove in 8–14 m",
-    see: "Crystal-clear water over a rocky volcanic seabed under black cliffs; sea bream and wrasse; extraordinary isolation for a Lipari beach.",
+    see: "Crystal-clear water over a rocky volcanic seabed under black cliffs; sea bream and wrasse; extraordinary isolation.",
     notes: "Steep descent on foot from the road above (Vulcano's south side, near Cannitello) or by boat/water taxi from Porto Levante. No restrictions.",
     desc: "A secluded cove under black cliffs on Vulcano's southern shore — crystal-clear water over a rocky seabed, reachable on foot (steep descent) or by boat.",
     sources: [["Sailogy — Best Shores in Lipari", "https://www.sailogy.com/en/blog/the-best-shores-in-lipari/"], ["sicilia.info — Lipari", "https://www.sicilia.info/en/aeolian-islands/lipari/"]]
@@ -115,12 +179,12 @@ const SITES = [
     sources: [["Sailogy — Best Shores in Lipari", "https://www.sailogy.com/en/blog/the-best-shores-in-lipari/"], ["GetYourGuide — Aeolian snorkeling", "https://www.getyourguide.com/aeolian-islands-l3446/snorkeling-tc57/"]]
   },
   {
-    id: "pumice-canyon", name: "Pumice Canyon (Punta Castagna)", island: "Lipari",
+    id: "pumice-canyon", name: "Pumice Canyon (Punta Castagna shore)", island: "Lipari",
     lat: 38.512566, lng: 14.959444, approx: false,
     type: "beach", depth: 8, depthText: "5–12 m — white pumice seabed",
     access: "shore", anchorage: "Porticello / Canneto bay",
     see: "White pumice cliffs meeting vivid blue sea near Porticello; otherworldly contrast; white pumice seabed shimmering below; viewable from both land and sea.",
-    notes: "Walk from Porticello or approach by boat. No restrictions.",
+    notes: "Walk from Porticello or approach by boat. No restrictions. The offshore Punta Castagna dive (white plateau at 10 m, canyons to 50 m) is a separate pin — see POIs.",
     desc: "White pumice cliffs meeting vivid blue sea near Porticello — an otherworldly contrast you can explore by snorkelling along the pumice seabed.",
     sources: [["Sailogy — Best Shores in Lipari", "https://www.sailogy.com/en/blog/the-best-shores-in-lipari/"], ["turismoeolie — Lipari", "http://aeolianislands.turismoeolie.com/boating-lipari/"]]
   },
@@ -198,17 +262,27 @@ const SITES = [
     desc: "Salina's most accessible beach — a locals' favourite on the south coast with good snorkelling to the left of the beach and large fish.",
     sources: [["turismoeolie — Boating Salina", "http://aeolianislands.turismoeolie.com/boating-salina/"], ["Sailogy — Aeolian anchorages", "https://www.sailogy.com/en/blog/yacht-rental-aeolian-islands/"]]
   },
+  {
+    id: "punta-tre-pietre", name: "Punta Tre Pietre", island: "Salina",
+    lat: 38.536408, lng: 14.848629, approx: false,
+    type: "snorkel", depth: 5, depthText: "0–18 m — three awash rocks, ridge below", topDepth: 0, maxDepth: 35,
+    access: "boat", anchorage: "Tender from Rinella / Lingua",
+    see: "Three rocks breaking the surface — swim to them on the surface; bright orange Astroides, spirographs and sponges on the ridge below; scorpionfish, morays and octopus in the crevices.",
+    notes: "PADI position — SE of Rinella on Salina's south coast. Dive guides rate the shallows beginner-friendly; the ridge ends at 18 m on sand, with a rock pyramid (20–35 m) beyond for divers.",
+    desc: "Three awash rocks off Salina's south coast — beginner-friendly snorkelling over a colourful ridge, with a diveable rock pyramid beyond.",
+    sources: [["PADI dive-centre KML (Salina)", "https://www.padi.com/"], ["Lipari Diving Center — Salina sites", "https://www.liparidivingcenter.it/ita/immersioni-salina.html"]]
+  },
 
   // ---------------- STROMBOLI ----------------
   {
     id: "strombolicchio", name: "Strombolicchio", island: "Stromboli",
-    lat: 38.817300, lng: 15.251853, approx: false,
-    type: "snorkel", depth: 10, depthText: "5–15 m around the base",
+    lat: 38.816555, lng: 15.252279, approx: false,
+    type: "snorkel", depth: 10, depthText: "5–15 m around the base", topDepth: 0, maxDepth: 45,
     access: "boat", anchorage: "Ficogrande buoy field (~1.5 km dinghy ride)",
-    see: "Ancient basalt volcanic chimney; vertical walls colonised by gorgonians, sponges and bryozoans; rich marine life; deep blue clarity.",
-    notes: "Integral Nature Reserve — landing PROHIBITED. Snorkelling the surrounding water is permitted. Boat trips depart May–Oct.",
-    desc: "Ancient volcanic sea stack 2 km NE of Stromboli — rich marine life around its base in exceptional visibility. Landing prohibited; snorkel from the boat.",
-    sources: [["Wikipedia — Strombolicchio", "https://en.wikipedia.org/wiki/Strombolicchio"], ["italia.it — Strombolicchio", "https://www.italia.it/en/sicily/strombolicchio"]]
+    see: "Ancient basalt volcanic chimney; orange Astroides from a few metres down; vertical walls colonised by gorgonians, sponges and bryozoans; absolute water clarity — the stack's silhouette visible from the seabed.",
+    notes: "Integral Nature Reserve — landing PROHIBITED. Snorkelling the surrounding water is permitted; anchor shelf on the side facing Stromboli (PADI buoy position). Fire-red gorgonians and gold Gerardia savaglia deeper for divers.",
+    desc: "Ancient volcanic sea stack 2 km NE of Stromboli — rich marine life from a few metres down in exceptional visibility. Landing prohibited; snorkel from the boat.",
+    sources: [["PADI dive-centre KML (Full Day)", "https://www.padi.com/"], ["Wikipedia — Strombolicchio", "https://en.wikipedia.org/wiki/Strombolicchio"]]
   },
   {
     id: "sciara-fuoco", name: "Sciara del Fuoco", island: "Stromboli",
@@ -224,41 +298,51 @@ const SITES = [
   // ---------------- FILICUDI ----------------
   {
     id: "bue-marino", name: "Grotta del Bue Marino", island: "Filicudi",
-    lat: 38.571656, lng: 14.542465, approx: false,
+    lat: 38.571415, lng: 14.540916, approx: false,
     type: "snorkel", depth: 6, depthText: "0–10 m inside; seabed visible",
     access: "boat", anchorage: "Pecorini a Mare buoy field",
     see: "Largest sea cave in the Aeolians — 20m high, 30m wide; spectacular light effects and stalactites; extraordinary colour inside.",
-    notes: "SW coast of Filicudi. Watch the current on the way back out. Inner chamber was restricted 2021–22 for rockfall risk — confirm locally before entering.",
+    notes: "SW coast of Filicudi (PADI position). Watch the current on the way back out. Inner chamber was restricted 2021–22 for rockfall risk — confirm locally before entering.",
     desc: "The largest sea cave in the Aeolians — 20m high and 30m wide on Filicudi's SW coast, with spectacular light effects and stalactites.",
-    sources: [["Loveolie — Grotta del Bue Marino", "https://www.loveolie.com/en/attractions/mare-eolie/grotta-bue-marino"], ["Tripadvisor — Grotta del Bue Marino", "https://www.tripadvisor.com/Attraction_Review-g675109-d15683279-Reviews-Grotta_del_bue_marino-Filicudi_Aeolian_Islands_Islands_of_Sicily_Sicily.html"]]
+    sources: [["PADI dive-centre KML (Full Day)", "https://www.padi.com/"], ["Loveolie — Grotta del Bue Marino", "https://www.loveolie.com/en/attractions/mare-eolie/grotta-bue-marino"]]
   },
   {
     id: "la-canna", name: "La Canna", island: "Filicudi",
-    lat: 38.582405, lng: 14.521094, approx: false,
-    type: "snorkel", depth: 17, depthText: "5–20 m around the base",
-    access: "boat", anchorage: "Off Montenassari rock (12–16 m); 1.6 km offshore",
+    lat: 38.581604, lng: 14.526976, approx: false,
+    type: "snorkel", depth: 17, depthText: "5–20 m around the base", topDepth: 0, maxDepth: 45,
+    access: "boat", anchorage: "Off Montenassari rock (12–16 m); ~1.5 km offshore",
     see: "71 m volcanic sea stack; crystal-clear water with groupers, amberjacks and lobster at the base; walls vanishing into deep blue.",
-    notes: "Protected nature reserve — landing prohibited. Snorkel from the boat. Seas can be rough — assess from anchorage before going.",
+    notes: "PADI position. Protected nature reserve — landing prohibited. Snorkel from the boat. Seas can be rough — assess from anchorage before going.",
     desc: "A 71 m volcanic sea stack NW of Filicudi — crystal-clear water at the base with groupers, amberjacks and lobster. Landing prohibited; snorkel from the boat.",
-    sources: [["Loveolie — La Canna", "https://www.loveolie.com/en/attractions/mare-eolie/la-canna"], ["Aeolian Yacht Services — Filicudi & Alicudi", "https://www.aeolianyachtservices.com/filicudi-and-alicudi/"]]
+    sources: [["PADI dive-centre KML (Full Day)", "https://www.padi.com/"], ["Loveolie — La Canna", "https://www.loveolie.com/en/attractions/mare-eolie/la-canna"]]
   },
   {
-    id: "capo-graziano", name: "Capo Graziano / Secca", island: "Filicudi",
-    lat: 38.557313, lng: 14.588502, approx: false,
-    type: "snorkel", depth: 15, depthText: "5–20 m — 7 shipwrecks Bronze Age to 17th C",
-    access: "boat", anchorage: "Filicudi Porto buoy field (~100 m)",
-    see: "At least 9 Greek and Roman ships plus 2 early-20th-century wrecks on this shallow — finds spanning the 2nd century BC to a 17th-century Spanish galleon; clouds of fish; sea-whips and shrimps in caves; snorkelable reef crest at 5–10 m.",
-    notes: "The most important underwater archaeological site in the Aeolians. Snorkelling the outer reef crest (5–10 m) is free; formal dives are guided/scuba. Advanced certification required for the deeper Roman wreck. Reef is a boat hazard — approach by dinghy.",
-    desc: "The most important underwater archaeological site in the Aeolians — at least 9 Greek and Roman wrecks plus 2 early-20th-century vessels, with finds from the 2nd century BC to a Spanish galleon.",
-    sources: [["Aeolian Yacht Services — Filicudi & Alicudi", "https://www.aeolianyachtservices.com/filicudi-and-alicudi/"], ["VisitSicily — Underwater Archaeology", "https://www.visitsicily.info/en/itinerario/underwater-archaeology-routes/"]]
+    id: "secca-sei-metri", name: "La Secca dei 6 Metri", island: "Filicudi",
+    lat: 38.586902, lng: 14.558209, approx: false,
+    type: "snorkel", depth: 6, depthText: "Cap at 6 m — an emerald spot in the blue", topDepth: 6, maxDepth: 42,
+    access: "boat", anchorage: "Tender from Filicudi Porto / La Canna run",
+    see: "A tiny 2 m² cap at 6 m whose plumb-vertical walls make it look like a small emerald stain in infinite turquoise; morays (often several per den), young groupers, big scorpionfish in the upper fissures; pelagics hunting around the tower.",
+    notes: "PADI position — NORTH of Filicudi. The cap is visible from the surface and reachable for confident freedivers; the sheer walls to 42 m are scuba. Red gorgonians and Axinella sponges on the surrounding boulders.",
+    desc: "A submerged tower north of Filicudi whose 6 m cap glows like an emerald spot in the blue — freedive the top, divers fly down the plumb-line walls.",
+    sources: [["PADI dive-centre KML (Full Day)", "https://www.padi.com/"], ["Aeolian dive guides — Secca dei Sei Metri", "https://www.viaggipersub.it/vacanze-subacquee/europa/immersioni-diving-in-italia/sicilia/eolie/"]]
+  },
+  {
+    id: "capo-graziano", name: "Capo Graziano / Secca (wreck field)", island: "Filicudi",
+    lat: 38.552674, lng: 14.599257, approx: false,
+    type: "snorkel", depth: 3, depthText: "Secca teeth at 3 m; wreck field below", topDepth: 3, maxDepth: 30,
+    access: "boat", anchorage: "Filicudi Porto buoy field",
+    see: "A rock monolith rising from the depths to sharp teeth just 3 m below the surface — visible to snorkellers; amphora shards and ancient anchors scatter the descent; the Roman 'Relitto A' cargo lies on sand at 30 m. Decades of dive/fishing bans have made the habitat exceptionally rich.",
+    notes: "PADI position — SE of the cape. The most important underwater archaeological site in the Aeolians (9+ wrecks, Bronze Age to 17th-C). Snorkelling over the teeth is possible; ANY diving is guided-only via authorised centres (30 m certification required). The secca is a boat hazard — approach by dinghy. Finds displayed at the Filicudi branch of the Lipari museum.",
+    desc: "The wreck-field secca off Capo Graziano — sharp rock teeth at 3 m with millennia of shipwreck cargo below, snorkelable on top and guided-dive only beneath.",
+    sources: [["PADI dive-centre KML (Full Day)", "https://www.padi.com/"], ["VisitSicily — Underwater Archaeology", "https://www.visitsicily.info/en/itinerario/underwater-archaeology-routes/"]]
   },
   {
     id: "grotta-gamberi", name: "Grotta dei Gamberi", island: "Filicudi",
     lat: 38.554500, lng: 14.552000, approx: true,
-    type: "snorkel", depth: 20, depthText: "Entrance walls ~18–20 m — freedive territory",
+    type: "snorkel", depth: 20, depthText: "Entrance walls ~18–20 m — freedive territory", topDepth: 15, maxDepth: 39,
     access: "boat", anchorage: "Pecorini a Mare buoy field",
     see: "Thousands of Plesionika narval shrimps coating the cave walls; sponges and moray eels; deep cave descending to 33–39 m — only the entrance walls are snorkelable.",
-    notes: "Deep cave (33–39 m full depth) — freedive/scuba territory for the main chamber. For confident freedivers only at entrance walls. Boat from Filicudi Porto.",
+    notes: "Deep cave (33–39 m full depth) — freedive/scuba territory for the main chamber. For confident freedivers only at entrance walls. Boat from Filicudi Porto. Note: Salina has its own, separate Grotta dei Gamberi (Turchigno) — see POIs.",
     desc: "A deep cave packed with thousands of shrimps coating its walls, plus sponges and moray eels — freedive territory from the boat at Filicudi Porto.",
     sources: [["vacanzeinbarca — Filicudi", "https://www.vacanzeinbarca.it/en/destinazioni/filicudi-alicudi.php"], ["Aeolian Yacht Services — Filicudi & Alicudi", "https://www.aeolianyachtservices.com/filicudi-and-alicudi/"]]
   },
@@ -273,6 +357,16 @@ const SITES = [
     notes: "Remotest island in the Aeolians — virtually no tourists. No equipment rental on island — bring everything.",
     desc: "The remotest Aeolian island with 20–30 m visibility — reportedly the clearest water in the archipelago. Virtually no tourists; bring all your own equipment.",
     sources: [["Aeolian Yacht Services — Filicudi & Alicudi", "https://www.aeolianyachtservices.com/filicudi-and-alicudi/"], ["Apartment in Catania — Alicudi", "https://www.apartmentincatania.com/en/alicudi-island/"]]
+  },
+  {
+    id: "ciglia-tramontana", name: "Le Ciglia di Tramontana", island: "Alicudi",
+    lat: 38.548000, lng: 14.353000, approx: true,
+    type: "snorkel", depth: 4, depthText: "Best in the first few metres", topDepth: 0, maxDepth: 30,
+    access: "boat", anchorage: "Tender from Alicudi Porto buoys",
+    see: "Small caves and tunnels forming between boulder masses just below the surface — every inch carpeted with orange Astroides, golden Parazoanthus and encrusting sponges; rare cowries in the crevices.",
+    notes: "North (tramontana) side of Alicudi. Dive guides are explicit: the island's underwater beauty peaks just metres down — perfect snorkel terrain. Gentle slopes, no offshore shoals; all routes hug the coast.",
+    desc: "Alicudi's north side, where caves and tunnels carpeted in orange and gold open just below the surface — the archipelago's purest snorkel terrain.",
+    sources: [["Aeolian dive guides — Ciglia di Tramontana", "https://www.viaggipersub.it/vacanze-subacquee/europa/immersioni-diving-in-italia/sicilia/eolie/"]]
   }
 ];
 
@@ -314,8 +408,9 @@ const PROXIMITY = { swim: 400, tender: 1500 };
 
 // ===================================================================
 // Travel-tip POIs — restaurants, bars, beaches, attractions, island
-// overviews. Compiled from Adventurous Kate and Google Maps.
-// (Snorkel sites are in SITES above; these are general travel tips.)
+// overviews, dive sites (scuba), wrecks and jumps. Compiled from
+// Adventurous Kate, Lonely Planet, Silvia's Trips, Michelin, PADI
+// dive-centre maps and Google Maps.
 // ===================================================================
 const POI_TYPES = {
   island:         { label: "Island overview",  glyph: "⊙", color: "#64748b" },
@@ -332,6 +427,7 @@ const POI_TYPES = {
   sport:               { label: "Sport facility",     glyph: "◎", color: "#3b82f6" },
   cliff_jump:          { label: "Cliff / rock jump",  glyph: "▼", color: "#ef4444" },
   shipwreck:           { label: "Shipwreck",          glyph: "⊗", color: "#78716c" },
+  dive_site:           { label: "Dive site (scuba)",  glyph: "⊘", color: "#6366f1" },
   restaurant_michelin: { label: "Michelin restaurant",glyph: "⊕", color: "#f59e0b" },
   wine_bar:            { label: "Wine bar & deli",    glyph: "◆", color: "#8e44ad" },
   viewpoint:           { label: "Viewpoint",          glyph: "◉", color: "#10b981" },
@@ -481,14 +577,76 @@ const POIS = [
     source: "Google Maps (verified)" },
 
   // ---- Shipwrecks (scuba / technical diving) ----
-  { id: "wreck-lisca-bianca", name: "Lisca Bianca Merchant Wreck", island: "Panarea islets",
-    lat: 38.639000, lng: 15.113500, type: "shipwreck",
-    notes: "19th-century English merchant ship between Lisca Bianca and Bottaro islets — bow at ~43 m with the propeller visible, considered one of Italy's most beautiful wrecks. Large groupers, moray eels and lobsters. Scuba only at depth. The shallow fumarole field in the same anchorage is excellent for snorkellers.",
-    source: "Dive centres (exact buoy position on request)" },
+  { id: "wreck-lisca-bianca", name: "Lisca Bianca Wreck (the Llanishen)", island: "Panarea islets",
+    lat: 38.639184, lng: 15.115881, topDepth: 30, maxDepth: 42, type: "shipwreck",
+    notes: "The LLANISHEN — a 19th-century British merchant steamer on the east side of Lisca Bianca, and the ONLY wreck in the Aeolians at sport-diving depth. The bow lies capsized to port down the slope; the stern is the intact, beautiful part — massive rudder plate and the great propeller, blades half-buried in sand at ~42 m. Large groupers, morays, lobsters. Scuba only. PADI buoy position.",
+    source: "PADI dive-centre KML (Panarea)" },
   { id: "wreck-capistello", name: "Capistello Wreck (4th-C BC)", island: "Lipari",
-    lat: 38.447000, lng: 14.954000, type: "shipwreck",
-    notes: "4th-century BC Greek wreck off Punta Capistello on Lipari's south coast, lying at 60–120 m. Its Campanian amphorae (some still corked) are on display in the Lipari Archaeological Museum. Technical divers only — for most visitors this is a museum visit, not a dive.",
-    source: "VisitSicily / Google Maps (estimated)" },
+    lat: 38.453500, lng: 14.964000, topDepth: 25, maxDepth: 102, type: "shipwreck",
+    notes: "The 'cursed wreck' — a Greek ship of ~300 BC lying ~200 m off the Secca di Capistello on Lipari's EAST side facing Vulcano, on a slope from 60 m to ~102 m. The secca itself rises to 25 m (authorised-diving-only archaeological zone; barracuda, big groupers). Amphorae displayed in the Lipari museum. New excavation campaigns began in 2026 — expect temporary navigation bans over the site.",
+    source: "Soprintendenza del Mare / dive guides (secca position approximate)" },
+
+  // ---- Dive sites (scuba — tops below snorkel range or guided-only) ----
+  { id: "dive-secca-bagno", name: "Secca del Bagno", island: "Lipari",
+    lat: 38.506692, lng: 14.885621, topDepth: 22, maxDepth: 45, type: "dive_site",
+    notes: "Three submerged stacks NW of Pietra del Bagno — best cap at 22 m. Coloured walls dense with red gorgonians; big groupers in the boulder dens; passing amberjack on deco. One of the archipelago's finest dives, and hard to locate without a guide. PADI buoy position. Scuba only.",
+    source: "PADI dive-centre KML (Full Day) / La Gorgonia Diving" },
+  { id: "dive-punta-castagna", name: "Punta Castagna (offshore dive)", island: "Lipari",
+    lat: 38.523856, lng: 14.964254, topDepth: 10, maxDepth: 50, type: "dive_site",
+    notes: "The surreal one: a plateau at ~10 m dusted completely white with pumice powder — like snow, or a dusty attic — visible to freedivers from the surface. Deep inclined canyons crowned with red gorgonians split the wall down past 50 m. Groupers and pelagics. PADI position, NE of the island offshore.",
+    source: "PADI dive-centre KML (Full Day) / La Gorgonia Diving" },
+  { id: "dive-parete-gabbiani", name: "Parete dei Gabbiani", island: "Lipari",
+    lat: 38.523654, lng: 14.950778, topDepth: 8, maxDepth: 45, type: "dive_site",
+    notes: "Lava-rock walls against the white pumice seabed — marvellous contrasts. Large red and yellow gorgonians; crevices with big lobster; parrotfish and groupers; nudibranchs and cerianthus. North coast, PADI position.",
+    source: "PADI dive-centre KML (Full Day)" },
+  { id: "dive-secca-capo", name: "Secca del Capo", island: "Salina",
+    lat: 38.612904, lng: 14.926128, topDepth: 14, maxDepth: 40, type: "dive_site",
+    notes: "Open-water rock blade ~3 nautical miles NE of Capo Faro — cap at ~14 m (sources vary 8–14 m by pinnacle), dive at 35–40 m. THE pelagic site of the Aeolians: tuna, big dentex, amberjack, dolphins, occasionally sharks; clouds of anthias on the drop. Demanding — perfect conditions and sounder needed to find the pinnacles. PADI position.",
+    source: "PADI dive-centre KML (Salina) / Lipari Diving Center" },
+  { id: "dive-turchigno", name: "Turchigno — Grotta dei Gamberi di Salina", island: "Salina",
+    lat: 38.584731, lng: 14.829654, topDepth: 15, maxDepth: 40, type: "dive_site",
+    notes: "Salina's own shrimp cave — distinct from Filicudi's namesake — on the north coast below Malfa. Depth profile unpublished (the Filicudi cave runs 33–39 m; expect similar). Local knowledge via Salina Diving / Muciara Diving in Malfa. PADI position.",
+    source: "PADI dive-centre KML (Salina)" },
+  { id: "dive-secca-pollara", name: "Secca di Pollara", island: "Salina",
+    lat: 38.580973, lng: 14.794635, topDepth: 25, maxDepth: 40, type: "dive_site",
+    notes: "Offshore W of the Pollara faraglione, ~100 m out from the stack. The secca starts at 25 m: sandy seabed with posidonia-covered rocks, then walls cut by crevices, caves and canyons — starfish, cerianthus, gorgonians, groupers, cuttlefish, turbot. Scuba only, but shares the Pollara anchorage with three snorkel/jump pins.",
+    source: "PADI dive-centre KML (Salina) / turismoeolie" },
+  { id: "dive-vallespina", name: "Punta Valle Spina", island: "Salina",
+    lat: 38.562318, lng: 14.793354, topDepth: 5, maxDepth: 30, type: "dive_site",
+    notes: "Coastal wall dive on Salina's wild west coast below the Pollara–Leni cliffs. Depth profile unpublished — local diving centres hold details. Almost never another boat here.",
+    source: "PADI dive-centre KML (Salina)" },
+  { id: "dive-cocunciara", name: "Cocunciara", island: "Salina",
+    lat: 38.583792, lng: 14.855495, topDepth: 5, maxDepth: 30, type: "dive_site",
+    notes: "Coastal dive on Salina's north shore between Malfa and Capo Faro. Details unpublished — ask Salina dive centres. Convenient from the Malfa anchorage.",
+    source: "PADI dive-centre KML (Salina)" },
+  { id: "dive-brigantino", name: "Punta Brigantino", island: "Salina",
+    lat: 38.533656, lng: 14.858328, topDepth: 5, maxDepth: 30, type: "dive_site",
+    notes: "Salina's southern corner west of Lingua — coastal ridge dive. Depth profile unpublished; local centres hold details. PADI position.",
+    source: "PADI dive-centre KML (Salina)" },
+  { id: "dive-secca-scirocco", name: "Secca di Scirocco", island: "Stromboli",
+    lat: 38.813462, lng: 15.250220, topDepth: 20, maxDepth: 45, type: "dive_site",
+    notes: "Elliptical monolith just SSW of Strombolicchio, top at 20 m. Flanks completely covered in red gorgonians thanks to the steady northerly current; red damselfish armies; amberjack, tuna and big pelagics with luck; groupers, congers and forkbeards below. Considered among the finest dives in the southern Tyrrhenian. Current-exposed; expert freedivers glimpse the cap. PADI position.",
+    source: "PADI dive-centre KML (Full Day)" },
+  { id: "dive-secche-lazzaro", name: "Secche di Lazzaro", island: "Stromboli",
+    lat: 38.779488, lng: 15.195662, topDepth: 12, maxDepth: 40, type: "dive_site",
+    notes: "Off Punta Lazzaro on Stromboli's SW side near Ginostra — basalt terraces and lava-flow morphology underwater. Published depth data is thin; dive boats from Stromboli run it. Pairs naturally with a Ginostra visit.",
+    source: "PADI dive-centre KML (Full Day)" },
+  { id: "dive-spinazzola", name: "Scoglio di Spinazzola", island: "Panarea islets",
+    lat: 38.663928, lng: 15.107957, topDepth: 5, maxDepth: 45, type: "dive_site",
+    notes: "Marble-pale stack off Basiluzzo's west side. Start on the boulder plateau between stack and islet; the dazzling white monolith runs vertically into the blue — the west wall meets sand at 45 m. Morays, red scorpionfish and small groupers in the boulder field; orange-to-yellow encrusting life in the shaded clefts. PADI position.",
+    source: "PADI dive-centre KML (Panarea)" },
+  { id: "dive-coocum", name: "Coocum", island: "Panarea islets",
+    lat: 38.637491, lng: 15.095378, topDepth: 5, maxDepth: 35, type: "dive_site",
+    notes: "Dive point just south of Dattilo (local name, sometimes 'Cocum'). Boulder field and walls; details held by Amphibia Diving Panarea. PADI position.",
+    source: "PADI dive-centre KML (Panarea)" },
+  { id: "dive-secca-panarelli", name: "Secca di Panarelli", island: "Panarea islets",
+    lat: 38.642184, lng: 15.101504, topDepth: 10, maxDepth: 40, type: "dive_site",
+    notes: "The deeper shoal just east of the Panarelli rocks — top within freedive-glimpse range (~10 m), diveable walls below. PADI position.",
+    source: "PADI dive-centre KML (Panarea)" },
+  { id: "dive-secca-lisca-nera", name: "Secca Lisca Nera", island: "Panarea islets",
+    lat: 38.634773, lng: 15.108968, topDepth: 8, maxDepth: 35, type: "dive_site",
+    notes: "Shoal off Lisca Nera, the half-sunken islet south of Bottaro. Hydrothermal staining on the rocks — the whole shelf is geothermally active. Top within freedive range. PADI position.",
+    source: "PADI dive-centre KML (Panarea)" },
 
   // ---- Cliff / rock jumps ----
   { id: "jump-sirene", name: "Scoglio delle Sirene", island: "Vulcano",
@@ -508,21 +666,21 @@ const POIS = [
     notes: "Boat-only cove on Lipari's west coast below the faraglioni. Volcanic rock ledges of varying heights (5–10 m) with deep crystal-clear water below — reviewers call it the best swimming and diving area on this coast. Boat access only.",
     source: "Google Maps (estimated)" },
   { id: "jump-pietra-menalda", name: "Pietra Menalda (Faraglione)", island: "Lipari",
-    lat: 38.440500, lng: 14.942000, type: "cliff_jump",
-    notes: "The smaller (20 m) of Lipari's two famous faraglioni, off the island's SW tip near Punta Perciato — its 80 m sibling Pietra Lunga stands immediately seaward (pair verified on Google Maps at 38.4394, 14.9431). Boat tours anchor here; jumpers use the lower shoulders and ledges (5–15 m depending on route) with deep water all around. The full summit is loose volcanic rock — climbing to the top is genuinely dangerous.",
-    source: "Google Maps (Faraglioni di Lipari verified; Menalda offset estimated)" },
+    lat: 38.438595, lng: 14.943008, type: "cliff_jump",
+    notes: "The smaller (20 m) of Lipari's two famous faraglioni, off the island's SW tip near Punta Perciato — its 80 m sibling Pietra Lunga stands immediately seaward. Boat tours anchor here; jumpers use the lower shoulders and ledges (5–15 m depending on route) with deep water all around; divers circuit the stack at 18–40 m (octopus, morays, groupers, dentex). The full summit is loose volcanic rock — climbing to the top is genuinely dangerous.",
+    source: "PADI dive-centre KML — Faraglioni di Lipari (matches Google within 90 m)" },
   { id: "jump-pietra-bagno", name: "Pietra del Bagno", island: "Lipari",
-    lat: 38.474722, lng: 14.895833, type: "cliff_jump",
-    notes: "Large isolated rock off Lipari's NW coast facing Salina — a classic boat-trip jump and swim stop. Rock walls drop straight to 25–30 m so the water is deep all around. Boat access only.",
-    source: "Google Maps (verified)" },
+    lat: 38.503600, lng: 14.897549, type: "cliff_jump",
+    notes: "Large isolated rock off Lipari's NW coast facing Salina — a classic boat-trip jump and swim stop. Rock walls drop straight to 25–30 m so the water is deep all around. Boat access only. POSITION NOTE: PADI dive map places the rock here; a Google listing puts it 3.2 km south at 38.4747 — verify visually on satellite (one source is wrong).",
+    source: "PADI dive-centre KML (Full Day) — conflicts with Google listing" },
   { id: "jump-pollara-balate", name: "Le Balate Rocks, Pollara", island: "Salina",
     lat: 38.580500, lng: 14.806500, type: "cliff_jump",
     notes: "Lava rocks and old fishermen's ramps at Le Balate below Pollara village — informal jumping points of varying heights into deep clear water inside the collapsed crater bay. Assess depth and swell on the day; no supervision.",
     source: "Google Maps (estimated)" },
-  { id: "jump-faraglione-pollara", name: "Faraglione di Pollara", island: "Salina",
-    lat: 38.584800, lng: 14.800500, type: "cliff_jump",
-    notes: "The fortress-like stack guarding Pollara bay — deep water on its seaward side with climbable lower ledges (5–12 m). Boat or long swim from Le Balate. The rock is friable tuff — stick to the low ledges locals use.",
-    source: "Google Maps (estimated)" },
+  { id: "jump-faraglione-pollara", name: "Faraglione di Pollara (Scoglio)", island: "Salina",
+    lat: 38.580437, lng: 14.801594, type: "cliff_jump",
+    notes: "The fortress-like stack guarding Pollara bay — deep water on its seaward side with climbable lower ledges (5–12 m); the rock is friable tuff, stick to the low ledges locals use. Below water it's an easy dive circuit (max 24 m) with morays and octopus in the fissures — and at the stack's SOUTH base, two old ship anchors and a small 17th-century iron cannon lie visible on the sand. PADI position.",
+    source: "PADI dive-centre KML (Salina) / Muciara Diving" },
   { id: "jump-perciato-arch", name: "Arco del Perciato — Top Jump", island: "Salina",
     lat: 38.582700, lng: 14.806800, type: "cliff_jump",
     notes: "Some jumpers leap from the top of the lava arch (8–10 m) into the channel below. Deep water but the landing zone is narrow and the top exposed — only with someone who has done it before and in flat calm conditions. Most visitors just swim through the arch instead.",
