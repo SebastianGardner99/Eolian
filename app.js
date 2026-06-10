@@ -926,7 +926,7 @@ function _setupWindCanvas() {
   if (_wxCanvas) return;
   const mapEl = document.getElementById("map");
   _wxCanvas = document.createElement("canvas");
-  _wxCanvas.style.cssText = "position:absolute;top:0;left:0;pointer-events:none;z-index:640;";
+  _wxCanvas.id = "wind-canvas";
   mapEl.appendChild(_wxCanvas);
   _wxCtx = _wxCanvas.getContext("2d");
   _resizeWindCanvas();
@@ -934,9 +934,10 @@ function _setupWindCanvas() {
 
 function _resizeWindCanvas() {
   if (!_wxCanvas) return;
-  const el = document.getElementById("map");
-  _wxCanvas.width  = el.clientWidth;
-  _wxCanvas.height = el.clientHeight;
+  const w = _wxCanvas.offsetWidth  || document.getElementById("map").offsetWidth;
+  const h = _wxCanvas.offsetHeight || document.getElementById("map").offsetHeight;
+  _wxCanvas.width  = w;
+  _wxCanvas.height = h;
 }
 
 function _particleColor(kn) {
@@ -987,8 +988,7 @@ function _animateWind() {
   const [r, g, b] = _particleColor(kn);
   const sinT = Math.sin(toward), cosT = Math.cos(toward);
 
-  _wxCtx.fillStyle = "rgba(10,20,29,0.12)";
-  _wxCtx.fillRect(0, 0, _wxCanvas.width, _wxCanvas.height);
+  _wxCtx.clearRect(0, 0, _wxCanvas.width, _wxCanvas.height);
 
   _windParticles.forEach((p, i) => {
     const speed = baseSpeed * p.sp;
