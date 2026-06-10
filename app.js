@@ -6,9 +6,9 @@
 // ---- State ----
 const state = {
   depth: { surface: true, mid: true, lower: true },
-  type: new Set(Object.keys(FEATURE_TYPES)), // all feature types on by default
+  type: new Set(Object.keys(FEATURE_TYPES)),
+  poiTypes: new Set(Object.keys(POI_TYPES)),
   showAnchorages: true,
-  showPois: true,
   showProximity: false,
   reachableOnly: false
 };
@@ -295,13 +295,19 @@ function applyFilters() {
     }
   });
 
-  if (state.showPois) {
-    if (!map.hasLayer(poiLayer)) poiLayer.addTo(map);
-  } else {
-    if (map.hasLayer(poiLayer)) map.removeLayer(poiLayer);
-  }
+  const visiblePois = [];
+  POIS.forEach((poi) => {
+    const m = poiMarkerById[poi.id];
+    if (!m) return;
+    if (state.poiTypes.has(poi.type)) {
+      if (!poiLayer.hasLayer(m)) poiLayer.addLayer(m);
+      visiblePois.push(poi);
+    } else {
+      if (poiLayer.hasLayer(m)) poiLayer.removeLayer(m);
+    }
+  });
+  if (!map.hasLayer(poiLayer)) poiLayer.addTo(map);
 
-  const visiblePois = state.showPois ? POIS : [];
   buildProximity(visible);
   renderList(visible, visiblePois);
   document.getElementById("site-count").textContent = visible.length + visiblePois.length;
@@ -340,7 +346,7 @@ function renderList(visible, visiblePois = []) {
   if (visiblePois.length) {
     const divider = document.createElement("li");
     divider.className = "list-divider";
-    divider.textContent = "Restaurants & Attractions";
+    divider.textContent = "Points of interest";
     ul.appendChild(divider);
 
     const sortedPois = [...visiblePois].sort((a, b) =>
@@ -672,29 +678,42 @@ function labelForBand(key) {
   return { surface: "Surface / wade", mid: "Easy free-dive", lower: "Deeper free-dive" }[key];
 }
 
-// ---- Build the feature-type filter UI ----
-function buildTypeFilters() {
-  const wrap = document.getElementById("type-filter");
+// ---- Build unified layer-toggle chips (site types + POI types) ----
+function buildLayerToggles() {
+  const wrap = document.getElementById("layer-toggles");
   wrap.innerHTML = "";
-  const counts = {};
-  SITES.forEach((s) => { counts[s.type] = (counts[s.type] || 0) + 1; });
+  const siteCounts = {};
+  SITES.forEach((s) => { siteCounts[s.type] = (siteCounts[s.type] || 0) + 1; });
+  const poiCounts = {};
+  POIS.forEach((p) => { poiCounts[p.type] = (poiCounts[p.type] || 0) + 1; });
 
   Object.entries(FEATURE_TYPES).forEach(([key, ft]) => {
-    if (!counts[key]) return;
+    if (!siteCounts[key]) return;
     const div = document.createElement("div");
     div.className = "type-chip";
     div.dataset.type = key;
     div.innerHTML = `<span class="tc-glyph">${ft.glyph}</span>
       <span class="tc-label">${ft.label}</span>
-      <span class="tc-count">${counts[key]}</span>`;
+      <span class="tc-count">${siteCounts[key]}</span>`;
     div.addEventListener("click", () => {
-      if (state.type.has(key)) {
-        state.type.delete(key);
-        div.classList.add("off");
-      } else {
-        state.type.add(key);
-        div.classList.remove("off");
-      }
+      if (state.type.has(key)) { state.type.delete(key); div.classList.add("off"); }
+      else { state.type.add(key); div.classList.remove("off"); }
+      applyFilters();
+    });
+    wrap.appendChild(div);
+  });
+
+  Object.entries(POI_TYPES).forEach(([key, pt]) => {
+    if (!poiCounts[key]) return;
+    const div = document.createElement("div");
+    div.className = "type-chip";
+    div.dataset.poitype = key;
+    div.innerHTML = `<span class="tc-glyph" style="color:${pt.color}">${pt.glyph}</span>
+      <span class="tc-label">${pt.label}</span>
+      <span class="tc-count">${poiCounts[key]}</span>`;
+    div.addEventListener("click", () => {
+      if (state.poiTypes.has(key)) { state.poiTypes.delete(key); div.classList.add("off"); }
+      else { state.poiTypes.add(key); div.classList.remove("off"); }
       applyFilters();
     });
     wrap.appendChild(div);
@@ -902,6 +921,7 @@ let _windAnimId = null;
 let _windAnimActive = false;
 const _windParticles = [];
 const _PARTICLE_COUNT = 140;
+const _TRAIL_LEN      = 14;
 
 function _setupWindCanvas() {
   if (_wxCanvas) return;
@@ -934,7 +954,8 @@ function _spawnRandom() {
     y: Math.random() * _wxCanvas.height,
     age: 0,
     maxAge: 60 + Math.random() * 90,
-    sp: 0.7 + Math.random() * 0.5
+    sp: 0.7 + Math.random() * 0.5,
+    trail: []
   };
 }
 
@@ -947,7 +968,8 @@ function _initParticles(windDeg) {
       x: Math.random() * w, y: Math.random() * h,
       age: Math.floor(Math.random() * 70),
       maxAge: 50 + Math.random() * 80,
-      sp: 0.7 + Math.random() * 0.5
+      sp: 0.7 + Math.random() * 0.5,
+      trail: []
     });
   }
 }
@@ -973,6 +995,8 @@ function _animateWind() {
   _windParticles.forEach((p, i) => {
     const speed = baseSpeed * p.sp;
     const px = p.x, py = p.y;
+    p.trail.push([px, py]);
+    if (p.trail.length > _TRAIL_LEN) p.trail.shift();
     p.x += sinT * speed;
     p.y -= cosT * speed;
     p.age++;
@@ -980,15 +1004,22 @@ function _animateWind() {
     const oob = p.x < -30 || p.x > _wxCanvas.width + 30 || p.y < -30 || p.y > _wxCanvas.height + 30;
     if (p.age > p.maxAge || oob) { _windParticles[i] = _spawnRandom(); return; }
 
-    const alpha = Math.min(p.age / 12, 1) * (1 - p.age / p.maxAge) * 0.78;
+    const alpha = Math.min(p.age / 12, 1) * (1 - p.age / p.maxAge) * 0.92;
     if (alpha < 0.01) return;
 
-    _wxCtx.strokeStyle = `rgba(${r},${g},${b},${alpha.toFixed(3)})`;
-    _wxCtx.lineWidth   = 1.4;
-    _wxCtx.beginPath();
-    _wxCtx.moveTo(px, py);
-    _wxCtx.lineTo(p.x, p.y);
-    _wxCtx.stroke();
+    _wxCtx.lineWidth = 2.5;
+    const tlen = p.trail.length;
+    for (let t = 0; t < tlen; t++) {
+      const seg = p.trail[t];
+      const nx = t + 1 < tlen ? p.trail[t + 1][0] : p.x;
+      const ny = t + 1 < tlen ? p.trail[t + 1][1] : p.y;
+      const a  = alpha * ((t + 1) / (tlen + 1));
+      _wxCtx.strokeStyle = `rgba(${r},${g},${b},${a.toFixed(3)})`;
+      _wxCtx.beginPath();
+      _wxCtx.moveTo(seg[0], seg[1]);
+      _wxCtx.lineTo(nx, ny);
+      _wxCtx.stroke();
+    }
   });
 
   _windAnimId = requestAnimationFrame(_animateWind);
@@ -1189,6 +1220,8 @@ function _showAddSiteHUD() {
 
 function _hideAddSiteHUD() {
   document.getElementById("add-site-hud").hidden = true;
+  const sbBtn = document.getElementById("add-site-sb-btn");
+  if (sbBtn) sbBtn.classList.remove("active");
 }
 
 function cancelAddSitePlacement() {
@@ -1243,7 +1276,15 @@ function _enterPlacementMode(siteData) {
 }
 
 function initAddSite() {
-  document.getElementById("add-site-btn").addEventListener("click", _showAddSiteHUD);
+  const sbBtn = document.getElementById("add-site-sb-btn");
+  sbBtn.addEventListener("click", () => {
+    const hud = document.getElementById("add-site-hud");
+    if (hud.hidden) { _showAddSiteHUD(); sbBtn.classList.add("active"); }
+    else { _hideAddSiteHUD(); cancelAddSitePlacement(); }
+  });
+
+  document.getElementById("add-site-hud").addEventListener("click", (e) => e.stopPropagation());
+
   document.getElementById("ash-cancel").addEventListener("click", () => {
     _hideAddSiteHUD();
     cancelAddSitePlacement();
@@ -1281,7 +1322,7 @@ function initAddSite() {
 function init() {
   loadCoordOverrides();
   buildDepthFilters();
-  buildTypeFilters();
+  buildLayerToggles();
   buildSiteMarkers();
   buildAnchorages();
   buildPois();
@@ -1289,10 +1330,6 @@ function init() {
   document.getElementById("tog-anchorages").addEventListener("change", (e) => {
     state.showAnchorages = e.target.checked;
     if (e.target.checked) anchorLayer.addTo(map); else map.removeLayer(anchorLayer);
-  });
-  document.getElementById("tog-pois").addEventListener("change", (e) => {
-    state.showPois = e.target.checked;
-    applyFilters();
   });
   document.getElementById("tog-proximity").addEventListener("change", (e) => {
     state.showProximity = e.target.checked;

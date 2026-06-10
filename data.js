@@ -64,7 +64,7 @@ const SITES = [
   // ---------------- PANAREA ISLETS ----------------
   {
     id: "lisca-bianca-bottaro", name: "Lisca Bianca / Bottaro Fumaroles", island: "Panarea islets",
-    lat: 38.637000, lng: 15.082000, approx: true,
+    lat: 38.638300, lng: 15.110300, approx: true,
     type: "snorkel", depth: 9, depthText: "5–13 m — volcanic gas vents",
     access: "boat", anchorage: "Between the two islets (5–13 m sand)",
     see: "Volcanic CO₂ vents bubbling vigorously from the sandy seabed; milky water near vent centres; the Grotta degli Innamorati (Lovers' Arch) swim-through on Lisca Bianca.",
@@ -74,7 +74,7 @@ const SITES = [
   },
   {
     id: "dattilo", name: "Dattilo", island: "Panarea islets",
-    lat: 38.637000, lng: 15.077000, approx: true,
+    lat: 38.638400, lng: 15.099500, approx: false,
     type: "snorkel", depth: 10, depthText: "5–15 m — volcanic rock formations",
     access: "boat", anchorage: "Off the east coast (5–13 m sand)",
     see: "Tall narrow volcanic islet; interesting rock formations and cave passages below the waterline; colourful sponges and algae in clear water.",
@@ -95,13 +95,13 @@ const SITES = [
 
   // ---------------- LIPARI ----------------
   {
-    id: "spiaggia-asino", name: "Spiaggia dell'Asino", island: "Lipari",
+    id: "spiaggia-asino", name: "Spiaggia dell'Asino", island: "Vulcano",
     lat: 38.370390, lng: 14.997942, approx: false,
     type: "snorkel", depth: 8, depthText: "5–12 m — rocky seabed under black cliffs",
     access: "shore", anchorage: "Off the cove in 8–14 m",
     see: "Crystal-clear water over a rocky volcanic seabed under black cliffs; sea bream and wrasse; extraordinary isolation for a Lipari beach.",
-    notes: "200m steep descent on foot or water taxi from Lipari town. No restrictions.",
-    desc: "A secluded cove under black cliffs on Lipari's SW shore — crystal-clear water over a rocky seabed, reachable on foot (steep descent) or by water taxi.",
+    notes: "Steep descent on foot from the road above (Vulcano's south side, near Cannitello) or by boat/water taxi from Porto Levante. No restrictions.",
+    desc: "A secluded cove under black cliffs on Vulcano's southern shore — crystal-clear water over a rocky seabed, reachable on foot (steep descent) or by boat.",
     sources: [["Sailogy — Best Shores in Lipari", "https://www.sailogy.com/en/blog/the-best-shores-in-lipari/"], ["sicilia.info — Lipari", "https://www.sicilia.info/en/aeolian-islands/lipari/"]]
   },
   {
@@ -148,7 +148,7 @@ const SITES = [
   },
   {
     id: "piscina-venere", name: "Piscina di Venere (Venus Pool)", island: "Vulcano",
-    lat: 38.402900, lng: 14.938000, approx: true,
+    lat: 38.403700, lng: 14.938900, approx: true,
     type: "snorkel", depth: 3, depthText: "1–5 m — completely enclosed rock pool",
     access: "boat", anchorage: "Bay south of the caves (5–12 m sand)",
     see: "A natural tuff-and-basalt rock pool completely enclosed from the sea; extraordinary turquoise colour; one of Italy's most beautiful natural pools.",
@@ -254,7 +254,7 @@ const SITES = [
   },
   {
     id: "grotta-gamberi", name: "Grotta dei Gamberi", island: "Filicudi",
-    lat: 38.558000, lng: 14.545000, approx: true,
+    lat: 38.554500, lng: 14.552000, approx: true,
     type: "snorkel", depth: 20, depthText: "Entrance walls ~18–20 m — freedive territory",
     access: "boat", anchorage: "Pecorini a Mare buoy field",
     see: "Thousands of Plesionika narval shrimps coating the cave walls; sponges and moray eels; deep cave descending to 33–39 m — only the entrance walls are snorkelable.",
@@ -432,7 +432,7 @@ const POIS = [
 
   // ---- Attractions ----
   { id: "poi-prehistoric-village", name: "Prehistoric Village Punta Milazzese", island: "Panarea",
-    lat: 38.621500, lng: 15.063000, type: "attraction",
+    lat: 38.625536, lng: 15.063662, type: "attraction",
     notes: "Bronze Age ruins (14th century BC) with Mycenaean pottery finds suggesting ancient trade links with Crete. Free to visit. 45-min walk from the port via Cala Zimmari. The view of the peninsula from the top is one of the best in the Aeolians.",
     source: "Adventurous Kate / Google Maps" },
 
@@ -478,18 +478,18 @@ const POIS = [
 
   // ---- Shipwrecks (scuba / technical diving) ----
   { id: "wreck-lisca-bianca", name: "Lisca Bianca Merchant Wreck", island: "Panarea islets",
-    lat: 38.637000, lng: 15.085000, type: "shipwreck",
+    lat: 38.639000, lng: 15.113500, type: "shipwreck",
     notes: "19th-century English merchant ship between Lisca Bianca and Bottaro islets — bow at ~43 m with the propeller visible, considered one of Italy's most beautiful wrecks. Large groupers, moray eels and lobsters. Scuba only at depth. The shallow fumarole field in the same anchorage is excellent for snorkellers.",
     source: "Dive centres (exact buoy position on request)" },
   { id: "wreck-capistello", name: "Capistello Wreck (4th-C BC)", island: "Lipari",
-    lat: 38.440000, lng: 14.945000, type: "shipwreck",
+    lat: 38.447000, lng: 14.954000, type: "shipwreck",
     notes: "4th-century BC Greek wreck off Punta Capistello on Lipari's south coast, lying at 60–120 m. Its Campanian amphorae (some still corked) are on display in the Lipari Archaeological Museum. Technical divers only — for most visitors this is a museum visit, not a dive.",
     source: "VisitSicily / Google Maps (estimated)" },
 
   // ---- Cliff / rock jumps ----
   { id: "jump-sirene", name: "Scoglio delle Sirene", island: "Vulcano",
-    lat: 38.418500, lng: 14.957500, type: "cliff_jump",
-    notes: "Dark rock outcrop just off Sabbie Nere beach — the easy warm-up jump (3–5 m). Swim out from the beach, scramble up, jump. Low height, deep enough water. Busy in summer — check below before jumping.",
+    lat: 38.419500, lng: 14.952500, type: "cliff_jump",
+    notes: "Dark rock outcrop just off Spiaggia delle Sabbie Nere in Porto Ponente bay — the easy warm-up jump (3–5 m). Swim out from the beach, scramble up, jump. Low height, deep enough water. Busy in summer — check below before jumping.",
     source: "Google Maps (estimated)" },
   { id: "jump-gelso", name: "Gelso Jetty", island: "Vulcano",
     lat: 38.369300, lng: 14.994200, type: "cliff_jump",
@@ -500,23 +500,23 @@ const POIS = [
     notes: "Not a cliff but a 'leap into the void' offered by some boat tours crossing the Milazzo–Vulcano channel — jumping from the upper deck into hundreds of metres of open blue water. A different kind of thrill; varies by skipper and conditions.",
     source: "Approximate — mid-channel; varies by skipper" },
   { id: "jump-praia-vinci", name: "Praia di Vinci Faraglioni", island: "Lipari",
-    lat: 38.454000, lng: 14.929000, type: "cliff_jump",
+    lat: 38.450000, lng: 14.937000, type: "cliff_jump",
     notes: "Boat-only cove on Lipari's west coast below the faraglioni. Volcanic rock ledges of varying heights (5–10 m) with deep crystal-clear water below — reviewers call it the best swimming and diving area on this coast. Boat access only.",
     source: "Google Maps (estimated)" },
   { id: "jump-pietra-menalda", name: "Pietra Menalda (Faraglione)", island: "Lipari",
-    lat: 38.456000, lng: 14.928000, type: "cliff_jump",
-    notes: "The smaller of Lipari's two famous faraglioni — a 20 m volcanic stack in the Lipari–Vulcano channel. Boat tours anchor here; jumpers use the lower shoulders and ledges (5–15 m depending on route) with deep water all around. The full summit is loose volcanic rock — climbing to the top is genuinely dangerous.",
-    source: "Google Maps (estimated)" },
+    lat: 38.440500, lng: 14.942000, type: "cliff_jump",
+    notes: "The smaller (20 m) of Lipari's two famous faraglioni, off the island's SW tip near Punta Perciato — its 80 m sibling Pietra Lunga stands immediately seaward (pair verified on Google Maps at 38.4394, 14.9431). Boat tours anchor here; jumpers use the lower shoulders and ledges (5–15 m depending on route) with deep water all around. The full summit is loose volcanic rock — climbing to the top is genuinely dangerous.",
+    source: "Google Maps (Faraglioni di Lipari verified; Menalda offset estimated)" },
   { id: "jump-pietra-bagno", name: "Pietra del Bagno", island: "Lipari",
-    lat: 38.480000, lng: 14.913000, type: "cliff_jump",
+    lat: 38.474722, lng: 14.895833, type: "cliff_jump",
     notes: "Large isolated rock off Lipari's NW coast facing Salina — a classic boat-trip jump and swim stop. Rock walls drop straight to 25–30 m so the water is deep all around. Boat access only.",
-    source: "Google Maps (estimated)" },
+    source: "Google Maps (verified)" },
   { id: "jump-pollara-balate", name: "Le Balate Rocks, Pollara", island: "Salina",
     lat: 38.580500, lng: 14.806500, type: "cliff_jump",
     notes: "Lava rocks and old fishermen's ramps at Le Balate below Pollara village — informal jumping points of varying heights into deep clear water inside the collapsed crater bay. Assess depth and swell on the day; no supervision.",
     source: "Google Maps (estimated)" },
   { id: "jump-faraglione-pollara", name: "Faraglione di Pollara", island: "Salina",
-    lat: 38.586000, lng: 14.802000, type: "cliff_jump",
+    lat: 38.584800, lng: 14.800500, type: "cliff_jump",
     notes: "The fortress-like stack guarding Pollara bay — deep water on its seaward side with climbable lower ledges (5–12 m). Boat or long swim from Le Balate. The rock is friable tuff — stick to the low ledges locals use.",
     source: "Google Maps (estimated)" },
   { id: "jump-perciato-arch", name: "Arco del Perciato — Top Jump", island: "Salina",

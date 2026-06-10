@@ -43,19 +43,15 @@
           <div class="legend" id="depth-filters"></div>
         </section>
 
-        <!-- Feature type filter -->
+        <!-- Unified map layers -->
         <section class="panel">
-          <h2 class="panel-title">Feature type</h2>
-          <div class="types" id="type-filter"></div>
-        </section>
-
-        <!-- Overlays -->
-        <section class="panel">
-          <h2 class="panel-title">Overlays</h2>
+          <h2 class="panel-title">Show on map</h2>
+          <div class="types" id="layer-toggles"></div>
+          <div class="layer-sep"></div>
           <label class="check"><input type="checkbox" id="tog-anchorages" checked /> <span>Boat anchorages</span><i class="dot anchor"></i></label>
-          <label class="check"><input type="checkbox" id="tog-pois" checked /> <span>Restaurants &amp; attractions</span><i class="dot poi"></i></label>
           <label class="check"><input type="checkbox" id="tog-proximity" /> <span>Swim-distance rings</span></label>
           <label class="check"><input type="checkbox" id="tog-reachable" /> <span>Only sites swimmable from an anchorage</span></label>
+          <button id="add-site-sb-btn" class="add-site-sb-toggle">✚ Add a site</button>
         </section>
 
         <!-- Wind & Sea -->
@@ -74,7 +70,6 @@
         <section class="panel">
           <div class="list-head">
             <h2 class="panel-title">Sites <span id="site-count" class="count">0</span></h2>
-            <button id="add-site-btn" class="add-site-btn" title="Add a site">+ Add</button>
           </div>
           <ul id="site-list" class="site-list"></ul>
         </section>

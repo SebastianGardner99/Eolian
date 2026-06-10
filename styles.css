@@ -605,6 +605,35 @@ body {
 
 /* ---------------- Add-a-site feature ---------------- */
 
+/* Thin rule between type chips and overlay checkboxes */
+.layer-sep { border: none; border-top: 1px solid var(--border); margin: 8px 0 6px; }
+
+/* Sidebar "Add a site" toggle button */
+.add-site-sb-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px dashed rgba(52, 199, 89, .45);
+  border-radius: 6px;
+  color: #1a7f37;
+  font-size: .76rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 8px;
+  text-align: left;
+  transition: background .15s, border-color .15s;
+}
+.add-site-sb-toggle:hover { background: rgba(52, 199, 89, .08); }
+.add-site-sb-toggle.active {
+  background: rgba(52, 199, 89, .18);
+  border-style: solid;
+  border-color: rgba(52, 199, 89, .65);
+}
+
+/* Old inline "+ Add" button kept for reference — no longer rendered */
 #add-site-btn {
   background: rgba(52, 199, 89, .15);
   border: 1px solid rgba(52, 199, 89, .4);
@@ -636,6 +665,8 @@ body {
   flex-direction: column;
   overflow: hidden;
 }
+/* Prevent CSS display:flex from overriding the hidden attribute */
+.add-site-hud[hidden] { display: none !important; }
 
 .ash-header {
   display: flex;
@@ -756,6 +787,31 @@ select.ash-input { cursor: pointer; }
 .user-site-marker {
   outline: 2px dashed rgba(52, 199, 89, .7);
   outline-offset: 2px;
+}
+
+/* ---------------- Add-site HUD — mobile ---------------- */
+@media (max-width: 480px) {
+  .add-site-hud {
+    width: calc(100vw - 24px);
+    max-width: 220px;
+    top: auto;
+    bottom: 72px;
+    right: 12px;
+  }
+  .ash-header { padding: 8px 12px 6px; }
+  .ash-cancel-btn {
+    min-width: 40px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+  }
+  .ash-body { padding: 8px 10px; gap: 6px; }
+  .ash-input { font-size: .75rem; padding: 4px 7px; }
+  .ash-label { font-size: .65rem; }
+  .ash-footer { padding: 6px 10px 10px; }
+  .ash-place-btn { font-size: .75rem; padding: 6px 10px; }
 }
 
 /* ---------------- Responsive ---------------- */
