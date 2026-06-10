@@ -9,7 +9,6 @@ const state = {
   type: new Set(Object.keys(FEATURE_TYPES)),
   poiTypes: new Set(Object.keys(POI_TYPES)),
   showAnchorages: true,
-  showProximity: false,
   reachableOnly: false
 };
 
@@ -17,19 +16,46 @@ const state = {
 const map = L.map("map", {
   center: [38.55, 14.92],
   zoom: 11,
-  zoomControl: true,
+  zoomControl: false,   // manually positioned below
   minZoom: 9,
   maxZoom: 18
 });
-map.zoomControl.setPosition("topright");
+
+// Zoom control goes bottom-right so it never overlaps the add-site HUD (top-right)
+L.control.zoom({ position: "bottomright" }).addTo(map);
 
 L.control.locate({
   position: "topright",
   flyTo: true,
   keepCurrentZoomLevel: false,
-  locateOptions: { enableHighAccuracy: true, maxZoom: 16 },
+  locateOptions: { enableHighAccuracy: true, timeout: 10000, maximumAge: 0, maxZoom: 16 },
   strings: { title: "Show my location" }
 }).addTo(map);
+
+// Friendly geolocation error banner for the locate button
+map.on("locationerror", (e) => {
+  const code = e.code;
+  let msg;
+  if (code === 1) {
+    msg = "Location access denied. On iPhone/iPad: Settings → Privacy & Security → Location Services → Safari Websites → set to \"While Using\". Reload the page after changing it.";
+  } else if (code === 2) {
+    msg = "Position unavailable — try again outdoors with a clear sky view.";
+  } else {
+    msg = "Location request timed out. Move to an area with better signal and try again.";
+  }
+  _showGeoBanner(msg);
+});
+
+function _showGeoBanner(msg) {
+  const existing = document.getElementById("geo-error-banner");
+  if (existing) existing.remove();
+  const el = document.createElement("div");
+  el.id = "geo-error-banner";
+  el.className = "geo-error-banner";
+  el.textContent = msg;
+  document.getElementById("map-wrap").appendChild(el);
+  setTimeout(() => { if (el.parentNode) el.remove(); }, 8000);
+}
 
 // Esri World Imagery (satellite) base
 const satellite = L.tileLayer(
@@ -85,7 +111,6 @@ const poiLayer       = L.markerClusterGroup({
     });
   }
 }).addTo(map);
-const proximityLayer = L.layerGroup().addTo(map);
 
 // Keep marker refs by id for list<->map interaction
 const markerById    = {};
@@ -246,34 +271,6 @@ function buildPois() {
   });
 }
 
-// ---- Proximity rings ----
-function buildProximity(visibleSites) {
-  proximityLayer.clearLayers();
-  if (!state.showProximity) return;
-  visibleSites.forEach((site) => {
-    if (site._reach.level === "swim") {
-      proximityLayer.addLayer(
-        L.circle([site.lat, site.lng], {
-          radius: PROXIMITY.swim, color: "#5ee0c6", weight: 1.5,
-          fillColor: "#5ee0c6", fillOpacity: 0.08
-        })
-      );
-    } else if (site._reach.level === "tender") {
-      proximityLayer.addLayer(
-        L.circle([site.lat, site.lng], {
-          radius: PROXIMITY.tender, color: "#6fa8ff", weight: 1.5,
-          dashArray: "4 6", fillColor: "#6fa8ff", fillOpacity: 0.05
-        })
-      );
-      const a = site._reach.near.anchorage;
-      proximityLayer.addLayer(
-        L.polyline([[site.lat, site.lng], [a.lat, a.lng]], {
-          color: "#6fa8ff", weight: 1, opacity: 0.5, dashArray: "2 5"
-        })
-      );
-    }
-  });
-}
 
 // ---- Filtering ----
 function siteVisible(site) {
@@ -308,7 +305,6 @@ function applyFilters() {
   });
   if (!map.hasLayer(poiLayer)) poiLayer.addTo(map);
 
-  buildProximity(visible);
   renderList(visible, visiblePois);
   document.getElementById("site-count").textContent = visible.length + visiblePois.length;
 }
@@ -620,9 +616,10 @@ function openDrawer(id) {
           btn.disabled    = false;
         },
         (err) => {
-          const msg = err.code === 1 ? "Location access denied — check browser permissions." :
-                      err.code === 2 ? "Position unavailable — are you outdoors with signal?" :
-                                       "Location request timed out. Try again.";
+          const msg = err.code === 1
+            ? "Location access denied. On iPhone/iPad: Settings → Privacy & Security → Location Services → Safari Websites → set to \"While Using\". Reload the page after changing it."
+            : err.code === 2 ? "Position unavailable — try again outdoors with a clear sky view."
+                             : "Location request timed out. Move outside and try again.";
           output.hidden    = false;
           output.className = "gps-output gps-error-state";
           output.textContent = msg;
@@ -1330,11 +1327,6 @@ function init() {
   document.getElementById("tog-anchorages").addEventListener("change", (e) => {
     state.showAnchorages = e.target.checked;
     if (e.target.checked) anchorLayer.addTo(map); else map.removeLayer(anchorLayer);
-  });
-  document.getElementById("tog-proximity").addEventListener("change", (e) => {
-    state.showProximity = e.target.checked;
-    document.getElementById("prox-legend").hidden = !e.target.checked;
-    applyFilters();
   });
   document.getElementById("tog-reachable").addEventListener("change", (e) => {
     state.reachableOnly = e.target.checked;

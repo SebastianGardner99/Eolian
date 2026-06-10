@@ -55,6 +55,7 @@ body {
 .sb-header {
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; padding: 20px 18px 16px;
+  padding-top: max(20px, env(safe-area-inset-top, 0px));
   border-bottom: 1px solid var(--line);
 }
 .brand { display: flex; align-items: center; gap: 12px; }
@@ -157,17 +158,24 @@ body {
 }
 #app.sb-collapsed .sb-open { display: block; }
 
-.prox-legend {
-  position: absolute; bottom: 22px; left: 14px; z-index: 800;
-  background: rgba(15,31,44,.92); backdrop-filter: blur(8px);
-  border: 1px solid var(--line); border-radius: var(--r-md);
-  padding: 11px 14px; box-shadow: var(--shadow);
+/* Geolocation error banner (locate control + GPS drawer) */
+.geo-error-banner {
+  position: absolute;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,.82);
+  color: #fff;
+  font-size: .76rem;
+  line-height: 1.4;
+  padding: 9px 16px;
+  border-radius: 8px;
+  max-width: min(380px, calc(100vw - 32px));
+  text-align: center;
+  z-index: 900;
+  pointer-events: none;
+  box-shadow: 0 2px 10px rgba(0,0,0,.4);
 }
-.pl-row { font-size: .74rem; color: var(--ink-dim); display: flex; align-items: center; gap: 9px; }
-.pl-row + .pl-row { margin-top: 7px; }
-.ring { width: 14px; height: 14px; border-radius: 50%; }
-.ring.swim { border: 2px solid var(--swim); background: rgba(94,224,198,.18); }
-.ring.tender { border: 2px dashed var(--tender); background: rgba(111,168,255,.12); }
 
 /* Leaflet marker (feature glyph on depth-colored disc) */
 .depth-marker {
@@ -653,7 +661,7 @@ body {
 
 .add-site-hud {
   position: absolute;
-  top: 60px;
+  top: 110px;   /* clears locate button stacked above zoom control in topright */
   right: 12px;
   width: 270px;
   background: var(--surface);
@@ -789,8 +797,11 @@ select.ash-input { cursor: pointer; }
   outline-offset: 2px;
 }
 
-/* ---------------- Add-site HUD — mobile ---------------- */
+/* ---------------- Add-site HUD — mobile + zoom hide ---------------- */
 @media (max-width: 480px) {
+  /* Hide Leaflet +/− zoom — users pinch to zoom on touch devices */
+  .leaflet-control-zoom { display: none !important; }
+
   .add-site-hud {
     width: calc(100vw - 24px);
     max-width: 220px;

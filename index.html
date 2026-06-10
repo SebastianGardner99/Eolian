@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Aeolian Islands — Gardner's Guide</title>
   <meta name="description" content="Gardner's personal guide to Alonissos — beaches, snorkel spots, cliff jumps, restaurants, bars and island day trips, for sailing and catamaran cruising in the Northern Sporades." />
 
@@ -49,7 +49,6 @@
           <div class="types" id="layer-toggles"></div>
           <div class="layer-sep"></div>
           <label class="check"><input type="checkbox" id="tog-anchorages" checked /> <span>Boat anchorages</span><i class="dot anchor"></i></label>
-          <label class="check"><input type="checkbox" id="tog-proximity" /> <span>Swim-distance rings</span></label>
           <label class="check"><input type="checkbox" id="tog-reachable" /> <span>Only sites swimmable from an anchorage</span></label>
           <button id="add-site-sb-btn" class="add-site-sb-toggle">✚ Add a site</button>
         </section>
@@ -86,12 +85,6 @@
       <div id="map"></div>
 
       <button id="sb-open" class="sb-open" aria-label="Open filters" title="Filters">☰ Filters</button>
-
-      <!-- Floating proximity legend (shown when proximity overlay on) -->
-      <div id="prox-legend" class="prox-legend" hidden>
-        <div class="pl-row"><span class="ring swim"></span> Easy swim from anchorage (&lt;400 m)</div>
-        <div class="pl-row"><span class="ring tender"></span> Short tender ride (&lt;1.5 km)</div>
-      </div>
 
       <!-- Drag-to-reposition banner (shown during drag mode) -->
       <div id="drag-banner" class="drag-banner" hidden>
