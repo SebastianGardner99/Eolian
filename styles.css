@@ -985,3 +985,153 @@ select.ash-input { cursor: pointer; }
   line-height: 1.4;
   margin: 0 0 8px;
 }
+
+/* ---- CHANGE 4: chip collapse ---- */
+.chips-hidden { display: none !important; }
+
+.chip-more {
+  cursor: pointer;
+  opacity: .7;
+  border: 1px dashed var(--border, #ccc);
+  background: transparent;
+}
+.chip-more:hover { opacity: 1; }
+.chip-more.chip-expanded { opacity: 1; }
+
+/* ---- CHANGE 1: community site delete section ---- */
+.d-delete-section {
+  margin: 20px 0 4px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border, #e5e7eb);
+}
+
+.d-delete-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: .82rem;
+  color: #c53030;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.d-delete-btn:hover { color: #9b2c2c; }
+
+.d-delete-msg {
+  font-size: .82rem;
+  color: var(--ink-2, #555);
+  margin: 0 0 10px;
+}
+
+.d-delete-btns {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.d-delete-confirm-btn {
+  padding: 5px 14px;
+  border-radius: 6px;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: #c53030;
+  color: #fff;
+}
+.d-delete-confirm-btn:hover:not(:disabled) { background: #9b2c2c; }
+.d-delete-confirm-btn:disabled { opacity: .55; cursor: default; }
+
+/* ---- CHANGE 3: nearby panel ---- */
+.nearby-panel { padding-bottom: 0; }
+
+.nearby-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0 0 12px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink, #1a202c);
+  text-align: left;
+}
+.nearby-toggle-btn[aria-expanded="true"] { padding-bottom: 8px; }
+.nearby-toggle-caret { font-size: .75rem; color: var(--ink-2, #888); }
+
+.nearby-body { padding-bottom: 12px; }
+
+.nearby-list {
+  list-style: none;
+  margin: 6px 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nearby-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background .1s;
+}
+.nearby-item:hover, .nearby-item:focus { background: var(--bg-2, #f3f4f6); outline: none; }
+
+.nearby-glyph { font-size: 1.1rem; flex-shrink: 0; width: 22px; text-align: center; }
+
+.nearby-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.nearby-name {
+  font-size: .84rem;
+  font-weight: 600;
+  color: var(--ink, #1a202c);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nearby-sub {
+  font-size: .73rem;
+  color: var(--ink-2, #777);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nearby-dist {
+  font-size: .75rem;
+  color: var(--ink-2, #888);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.nearby-status {
+  font-size: .78rem;
+  color: var(--ink-2, #777);
+  margin: 0 0 2px;
+}
+
+.nearby-refresh-btn {
+  padding: 4px 12px;
+  border-radius: 5px;
+  border: 1px solid var(--border, #d1d5db);
+  background: var(--bg-2, #f9fafb);
+  color: var(--ink, #374151);
+  font-size: .78rem;
+  cursor: pointer;
+}
+.nearby-refresh-btn:hover { background: var(--bg-3, #e5e7eb); }

@@ -52,13 +52,25 @@
           <div class="legend" id="depth-filters"></div>
         </section>
 
+        <!-- Nearby -->
+        <section class="panel nearby-panel" id="nearby-panel">
+          <button class="panel-title nearby-toggle-btn" id="nearby-toggle" aria-expanded="false">
+            Nearby
+            <span class="nearby-toggle-caret">▸</span>
+          </button>
+          <div class="nearby-body" id="nearby-body" hidden>
+            <p class="panel-sub" id="nearby-status">Finding your location…</p>
+            <ul class="nearby-list" id="nearby-list"></ul>
+            <button class="nearby-refresh-btn" id="nearby-refresh" type="button">Refresh</button>
+          </div>
+        </section>
+
         <!-- Unified map layers -->
         <section class="panel">
           <h2 class="panel-title">Show on map</h2>
           <div class="types" id="layer-toggles"></div>
           <div class="layer-sep"></div>
           <label class="check"><input type="checkbox" id="tog-anchorages" /> <span>Boat anchorages</span><i class="dot anchor"></i></label>
-          <label class="check"><input type="checkbox" id="tog-reachable" /> <span>Only sites swimmable from an anchorage</span></label>
           <div id="community-layer-row" class="check" hidden>
             <input type="checkbox" id="tog-community" checked />
             <span>Community sites</span>
