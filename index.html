@@ -35,14 +35,20 @@
       <div class="sb-scroll">
         <!-- Wind & Sea — first so live conditions are immediately visible -->
         <section class="panel" id="wx-panel">
-          <h2 class="panel-title">Wind &amp; Sea <button id="wx-refresh" class="wx-refresh-btn" title="Refresh">↻</button></h2>
-          <p class="panel-sub">Live conditions · Open-Meteo marine forecast</p>
+          <h2 class="panel-title">Wind &amp; sea <button id="wx-refresh" class="wx-refresh-btn" title="Refresh">↻</button></h2>
           <div id="wx-body" class="wx-body">
             <div class="wx-loading" id="wx-loading">Fetching conditions…</div>
           </div>
           <label class="check" id="wx-overlay-label" style="margin-top:10px;display:none">
             <input type="checkbox" id="tog-wind-overlay" /> <span>Animate wind on map</span>
           </label>
+          <div class="precache-row" id="precache-row">
+            <button id="precache-btn" class="precache-btn" type="button">⬇ Download maps for offline</button>
+            <div id="precache-progress" class="precache-progress" hidden>
+              <div class="precache-bar-wrap"><div class="precache-bar" id="precache-bar"></div></div>
+              <span id="precache-label" class="precache-label">0 %</span>
+            </div>
+          </div>
         </section>
 
         <!-- Depth legend -->
@@ -74,12 +80,14 @@
           <button id="add-site-sb-btn" class="add-site-sb-toggle">✚ Add a site</button>
         </section>
 
-        <!-- Site list -->
-        <section class="panel">
-          <div class="list-head">
-            <h2 class="panel-title">Sites <span id="site-count" class="count">0</span></h2>
+        <!-- Search -->
+        <section class="panel search-panel">
+          <div class="search-input-wrap">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input id="search-input" class="search-input" type="search" placeholder="Search sites, beaches, restaurants…" autocomplete="off" />
+            <button id="search-clear" class="search-clear" aria-label="Clear search" hidden>✕</button>
           </div>
-          <ul id="site-list" class="site-list"></ul>
+          <ul id="search-results" class="search-results" hidden></ul>
         </section>
 
         <footer class="sb-footer">
@@ -94,6 +102,7 @@
       <div id="map"></div>
 
       <button id="sb-open" class="sb-open" aria-label="Open filters" title="Filters">☰ Filters</button>
+      <div id="offline-pill" class="offline-pill" hidden>Offline</div>
 
       <!-- Drag-to-reposition banner (shown during drag mode) -->
       <div id="drag-banner" class="drag-banner" hidden>
@@ -227,6 +236,13 @@
   </div>
   <div id="author-scrim" class="drawer-scrim" hidden></div>
 
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js", { scope: "./" }).catch(() => {});
+      });
+    }
+  </script>
   <script type="module" src="firebase-sync.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>

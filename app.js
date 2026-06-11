@@ -79,6 +79,10 @@ const labels = L.tileLayer(
   }
 ).addTo(map);
 
+// Island overview pane — z450, below marker pane (z600) so ov-* markers stay behind
+map.createPane("islandPane");
+map.getPane("islandPane").style.zIndex = 450;
+
 // ---- Layer groups ----
 const siteLayer = L.markerClusterGroup({
   maxClusterRadius: 38,
@@ -261,7 +265,7 @@ function buildPois() {
   poiLayer.clearLayers();
   for (const id in poiMarkerById) delete poiMarkerById[id];
   POIS.forEach((poi) => {
-    if (poi.type === "island") return; // island overviews not rendered on map
+    if (poi.type === "island") return; // island overviews handled by buildIslandMarkers
     const ovr = _posOverrides.get(poi.id);
     const m = L.marker([ovr?.lat ?? poi.lat, ovr?.lng ?? poi.lng], {
       icon: poiIcon(poi, !!ovr),
@@ -270,6 +274,20 @@ function buildPois() {
     m.bindPopup(poiPopupHtml(poi), { maxWidth: 300 });
     poiMarkerById[poi.id] = m;
     poiLayer.addLayer(m);
+  });
+}
+
+function buildIslandMarkers() {
+  POIS.filter((p) => p.type === "island").forEach((poi) => {
+    const icon = L.divIcon({
+      className: "",
+      html: `<div class="island-ov-marker">⊙</div>`,
+      iconSize: [22, 22],
+      iconAnchor: [11, 11]
+    });
+    const m = L.marker([poi.lat, poi.lng], { icon, pane: "islandPane", title: poi.name });
+    if (poi.notes) m.bindPopup(`<div class="pop-poi"><b>${poi.name}</b><p class="pop-poi-notes">${poi.notes}</p></div>`, { maxWidth: 260 });
+    m.addTo(map);
   });
 }
 
@@ -305,72 +323,136 @@ function applyFilters() {
     }
   });
   if (!map.hasLayer(poiLayer)) poiLayer.addTo(map);
-
-  renderList(visible, visiblePois);
-  document.getElementById("site-count").textContent = visible.length + visiblePois.length;
 }
 
-// ---- Site list ----
-function renderList(visible, visiblePois = []) {
-  const ul = document.getElementById("site-list");
-  ul.innerHTML = "";
+// ---- Search ----
+function _searchItems(q) {
+  q = q.toLowerCase().trim();
+  if (!q) return [];
 
-  const sorted = [...visible].sort((a, b) =>
-    (a.depth - b.depth) || a.name.localeCompare(b.name)
-  );
+  const results = [];
 
-  sorted.forEach((site) => {
+  function score(item) {
+    const n = (item.name || "").toLowerCase();
+    const i = (item.island || "").toLowerCase();
+    const t = (item._typeLabel || "").toLowerCase();
+    if (n.startsWith(q))        return 1;
+    if (n.includes(q))          return 2;
+    if (i.includes(q))          return 3;
+    if (t.includes(q))          return 4;
+    return 0;
+  }
+
+  SITES.forEach((site) => {
     const ft = FEATURE_TYPES[site.type];
-    const li = document.createElement("li");
-    li.className = "site-li";
-    li.style.borderLeftColor = DEPTH_BANDS[site._band].color;
-    const reach =
-      site._reach.level === "swim"   ? `<span class="reach">⊙ short swim</span>`  :
-      site._reach.level === "tender" ? `<span class="reach">⛵ tender ride</span>` : "";
-    li.innerHTML = `<h3><span class="li-glyph">${ft.glyph}</span> ${site.name}</h3>
-      <div class="meta"><span>${site.island}</span><span>${DEPTH_BANDS[site._band].label}</span>${reach}</div>`;
+    const item = { ...site, _typeLabel: ft ? ft.label : site.type, _kind: "site" };
+    const s = score(item);
+    if (s) results.push({ item, s });
+  });
+
+  POIS.forEach((poi) => {
+    if (poi.type === "island") return;
+    const pt = POI_TYPES[poi.type];
+    const item = { ...poi, _typeLabel: pt ? pt.label : poi.type, _kind: "poi" };
+    const s = score(item);
+    if (s) results.push({ item, s });
+  });
+
+  _communityDocs.forEach((cdoc) => {
+    const ft = FEATURE_TYPES[cdoc.type];
+    const pt = POI_TYPES[cdoc.type];
+    const item = { ...cdoc, _typeLabel: ft ? ft.label : (pt ? pt.label : (cdoc.otherType || cdoc.type)), _kind: "community" };
+    const s = score(item);
+    if (s) results.push({ item, s });
+  });
+
+  results.sort((a, b) => a.s - b.s || (a.item.name || "").localeCompare(b.item.name || ""));
+  return results.slice(0, 10).map((r) => r.item);
+}
+
+let _flashTimer = null;
+function _flashOffToggleMarker(m, lat, lng) {
+  if (_flashTimer) { clearTimeout(_flashTimer); _flashTimer = null; }
+  if (!map.hasLayer(m)) m.addTo(map);
+  map.flyTo([lat, lng], Math.max(map.getZoom(), 14), { duration: 0.6 });
+  m.openPopup();
+  _flashTimer = setTimeout(() => { if (map.hasLayer(m)) map.removeLayer(m); _flashTimer = null; }, 2500);
+}
+
+function _renderSearchResults(items) {
+  const ul  = document.getElementById("search-results");
+  const inp = document.getElementById("search-input");
+  ul.innerHTML = "";
+  if (!items.length) {
+    if (inp.value.trim()) {
+      const li = document.createElement("li");
+      li.className = "search-result-empty";
+      li.textContent = "No results";
+      ul.appendChild(li);
+    }
+    ul.hidden = !inp.value.trim();
+    return;
+  }
+  ul.hidden = false;
+
+  items.forEach((item) => {
+    const li  = document.createElement("li");
+    li.className = "search-result-li";
+    const ft  = FEATURE_TYPES[item.type];
+    const pt  = POI_TYPES[item.type];
+    const glyph = ft ? ft.glyph : (pt ? pt.glyph : "◎");
+    const color = ft ? DEPTH_BANDS[item._band]?.color : (pt ? pt.color : "#64748b");
+    li.innerHTML = `<span class="sr-glyph" style="color:${color || "#64748b"}">${glyph}</span>
+      <span class="sr-name">${item.name}</span>
+      <span class="sr-meta">${item.island || ""}</span>`;
+
     li.addEventListener("click", () => {
-      const m = markerById[site.id];
-      if (m && siteLayer.hasLayer(m)) {
-        siteLayer.zoomToShowLayer(m, () => m.openPopup());
+      if (item._kind === "site") {
+        const m = markerById[item.id];
+        if (m && siteLayer.hasLayer(m)) {
+          siteLayer.zoomToShowLayer(m, () => m.openPopup());
+        } else if (m) {
+          _flashOffToggleMarker(m, item.lat, item.lng);
+        } else {
+          map.flyTo([item.lat, item.lng], 14, { duration: 0.8 });
+        }
+      } else if (item._kind === "poi") {
+        const m = poiMarkerById[item.id];
+        if (m && poiLayer.hasLayer(m)) {
+          poiLayer.zoomToShowLayer(m, () => m.openPopup());
+        } else if (m) {
+          _flashOffToggleMarker(m, item.lat, item.lng);
+        } else {
+          map.flyTo([item.lat, item.lng], 15, { duration: 0.8 });
+        }
       } else {
-        map.flyTo([site.lat, site.lng], 14, { duration: 0.8 });
+        const m = _communityMarkers?.get(item.id);
+        map.flyTo([item.lat, item.lng], 15, { duration: 0.8 });
+        if (m) m.openPopup();
       }
     });
     ul.appendChild(li);
   });
+}
 
-  if (visiblePois.length) {
-    const divider = document.createElement("li");
-    divider.className = "list-divider";
-    divider.textContent = "Points of interest";
-    ul.appendChild(divider);
+function initSearch() {
+  const inp   = document.getElementById("search-input");
+  const clear = document.getElementById("search-clear");
+  const ul    = document.getElementById("search-results");
 
-    const sortedPois = [...visiblePois].sort((a, b) =>
-      a.island.localeCompare(b.island) || a.name.localeCompare(b.name)
-    );
-    sortedPois.forEach((poi) => {
-      const pt = POI_TYPES[poi.type];
-      const li = document.createElement("li");
-      li.className = "site-li poi-li";
-      li.style.borderLeftColor = pt.color;
-      li.innerHTML = `<h3><span class="li-glyph">${pt.glyph}</span> ${poi.name}</h3>
-        <div class="meta"><span>${poi.island}</span><span>${pt.label}</span></div>`;
-      li.addEventListener("click", () => {
-        const m = poiMarkerById[poi.id];
-        if (m) {
-          poiLayer.zoomToShowLayer(m, () => m.openPopup());
-        } else {
-          map.flyTo([poi.lat, poi.lng], 15, { duration: 0.8 });
-        }
-      });
-      ul.appendChild(li);
-    });
-  }
+  inp.addEventListener("input", () => {
+    const q = inp.value.trim();
+    clear.hidden = !q;
+    if (!q) { ul.hidden = true; return; }
+    _renderSearchResults(_searchItems(q));
+  });
 
-  if (!sorted.length && !visiblePois.length) {
-    ul.innerHTML = `<li style="color:var(--ink-mute);font-size:.82rem;padding:10px 2px">No sites match these filters.</li>`;
-  }
+  clear.addEventListener("click", () => {
+    inp.value = "";
+    clear.hidden = true;
+    ul.hidden = true;
+    inp.focus();
+  });
 }
 
 // ================================================================
@@ -618,7 +700,7 @@ function openDrawer(id) {
     </ul>
 
     ${site.approx ? `
-    <div class="d-section-h">Adjust Position</div>
+    <div class="d-section-h">Adjust position</div>
     <div class="d-gps">
       <div class="gps-btn-row">
         <button class="gps-btn" id="gps-update-btn">📍 Set to My GPS</button>
@@ -2292,6 +2374,76 @@ function _runNearby() {
 }
 
 // ================================================================
+// ---- Offline pill ----
+function initOffline() {
+  const pill = document.getElementById("offline-pill");
+  function update() { pill.hidden = navigator.onLine; }
+  update();
+  window.addEventListener("online",  update);
+  window.addEventListener("offline", update);
+}
+
+// ---- Pre-cache tiles (zooms 11–13, Aeolian bbox) ----
+function _tileCoord(lat, lng, z) {
+  const n = Math.pow(2, z);
+  const x = Math.floor((lng + 180) / 360 * n);
+  const latR = lat * Math.PI / 180;
+  const y = Math.floor((1 - Math.log(Math.tan(latR) + 1 / Math.cos(latR)) / Math.PI) / 2 * n);
+  return { x, y, z };
+}
+
+function _tileBboxUrls(latMin, latMax, lngMin, lngMax, zooms) {
+  const base = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile";
+  const urls = [];
+  zooms.forEach((z) => {
+    const tl = _tileCoord(latMax, lngMin, z);
+    const br = _tileCoord(latMin, lngMax, z);
+    for (let x = tl.x; x <= br.x; x++) {
+      for (let y = tl.y; y <= br.y; y++) {
+        urls.push(`${base}/${z}/${y}/${x}`);
+      }
+    }
+  });
+  return urls;
+}
+
+function initPreCache() {
+  if (!("serviceWorker" in navigator)) {
+    const row = document.getElementById("precache-row");
+    if (row) row.hidden = true;
+    return;
+  }
+
+  const btn  = document.getElementById("precache-btn");
+  const prog = document.getElementById("precache-progress");
+  const bar  = document.getElementById("precache-bar");
+  const lbl  = document.getElementById("precache-label");
+  if (!btn) return;
+
+  btn.addEventListener("click", async () => {
+    const sw = await navigator.serviceWorker.ready;
+    const urls = _tileBboxUrls(38.30, 38.90, 14.30, 15.30, [11, 12, 13]);
+    btn.disabled = true;
+    prog.hidden  = false;
+    lbl.textContent = "0 %";
+
+    const ch = new MessageChannel();
+    ch.port1.onmessage = (ev) => {
+      if (ev.data.type === "PRECACHE_PROGRESS") {
+        const pct = Math.round(ev.data.done / ev.data.total * 100);
+        bar.style.width = pct + "%";
+        lbl.textContent = pct + " %";
+      } else if (ev.data.type === "PRECACHE_DONE") {
+        lbl.textContent = "Done";
+        btn.textContent = "⬇ Maps saved";
+        setTimeout(() => { prog.hidden = true; }, 2000);
+      }
+    };
+    sw.active.postMessage({ type: "PRECACHE_TILES", urls }, [ch.port2]);
+  });
+}
+
+// ================================================================
 // ---- Init ----
 function init() {
   loadCoordOverrides();
@@ -2300,6 +2452,7 @@ function init() {
   buildSiteMarkers();
   buildAnchorages();
   buildPois();
+  buildIslandMarkers();
 
   document.getElementById("tog-anchorages").addEventListener("change", (e) => {
     state.showAnchorages = e.target.checked;
@@ -2371,6 +2524,9 @@ function init() {
   initAddSite();
   loadUserSites();
   initNearby();
+  initSearch();
+  initOffline();
+  initPreCache();
 
   _buildExposureCache();
   applyFilters();

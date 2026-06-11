@@ -79,8 +79,8 @@ body {
 
 .panel { padding: 16px 18px; border-bottom: 1px solid rgba(36,66,87,.5); }
 .panel-title {
-  font-size: .72rem; font-weight: 600; text-transform: uppercase;
-  letter-spacing: .12em; color: var(--ink-dim);
+  font-size: 0.8125rem; font-weight: 600;
+  color: #8E8E93;
   display: flex; align-items: center; gap: 8px;
 }
 .panel-sub { font-size: .72rem; color: var(--ink-mute); margin: 4px 0 10px; }
@@ -241,8 +241,8 @@ body {
 
 /* POI section divider in sidebar list */
 .list-divider {
-  font-size: .64rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
-  color: var(--ink-mute); padding: 10px 4px 4px; margin-top: 4px;
+  font-size: 0.8125rem; font-weight: 600;
+  color: #8E8E93; padding: 10px 4px 4px; margin-top: 4px;
   border-top: 1px solid var(--line);
 }
 .poi-li .li-glyph { color: var(--mid); }
@@ -299,7 +299,6 @@ body {
   flex: 1; font-family: inherit; font-size: .68rem; font-weight: 600;
   color: var(--ink-mute); background: var(--panel); border: 1px solid var(--line);
   border-radius: var(--r-sm); padding: 5px 0; cursor: pointer; transition: .16s;
-  text-transform: uppercase; letter-spacing: .06em;
 }
 .type-ctrls button:hover { color: var(--ink); border-color: var(--ink-mute); }
 
@@ -337,7 +336,7 @@ body {
 .d-table th { color: var(--ink-mute); font-weight: 600; width: 38%; padding-right: 12px; }
 .d-table td { color: var(--ink); }
 
-.d-section-h { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-mute); margin: 18px 0 8px; }
+.d-section-h { font-size: 0.8125rem; font-weight: 600; color: #8E8E93; margin: 18px 0 8px; }
 .d-prox {
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md);
   padding: 13px 15px; font-size: .84rem; line-height: 1.5;
@@ -411,7 +410,7 @@ body {
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-sm);
   padding: 8px 9px;
 }
-.wx-cell-label { font-size: .63rem; color: var(--ink-mute); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+.wx-cell-label { font-size: .63rem; color: var(--ink-mute); margin-bottom: 4px; }
 .wx-cell-val   { font-size: .88rem; font-weight: 700; display: flex; align-items: center; gap: 5px; }
 .wx-cell-sub   { font-size: .65rem; color: var(--ink-mute); margin-top: 3px; }
 
@@ -733,8 +732,6 @@ body {
 .ash-label {
   font-size: .68rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .04em;
   color: var(--ink-mute);
 }
 .ash-optional {
@@ -1192,10 +1189,8 @@ body {
 
 /* ---- Panel section headers (iOS grouped-list style) ---- */
 .panel-title {
-  font-size: .81rem;
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: .06em;
+  font-size: 0.8125rem;
+  font-weight: 600;
   color: var(--ios-label2);
 }
 
@@ -1373,10 +1368,8 @@ body {
 
 /* ---- D-section headers: iOS grouped-list style ---- */
 .d-section-h {
-  font-size: .81rem;
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: .06em;
+  font-size: 0.8125rem;
+  font-weight: 600;
   color: var(--ios-label2);
 }
 
@@ -1443,6 +1436,76 @@ body {
 .nearby-item:hover, .nearby-item:focus {
   background: var(--ios-bg2);
 }
+
+/* ---- Search panel ---- */
+.search-panel { padding: 12px 18px; }
+.search-input-wrap {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 10px; padding: 7px 10px;
+}
+.search-icon { font-size: 1rem; color: var(--ink-mute); flex-shrink: 0; }
+.search-input {
+  flex: 1; border: none; background: transparent; font-family: inherit;
+  font-size: .85rem; color: var(--ink); outline: none;
+}
+.search-input::placeholder { color: var(--ink-mute); }
+.search-clear {
+  border: none; background: transparent; cursor: pointer; color: var(--ink-mute);
+  font-size: .75rem; padding: 0 2px; line-height: 1;
+}
+.search-results {
+  list-style: none; margin: 6px 0 0; padding: 0;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel); overflow: hidden;
+}
+.search-result-li {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px; cursor: pointer; border-bottom: 1px solid var(--line);
+  transition: background .12s;
+}
+.search-result-li:last-child { border-bottom: none; }
+.search-result-li:hover { background: var(--panel-2); }
+.sr-glyph { font-size: .9rem; flex-shrink: 0; }
+.sr-name  { font-size: .84rem; font-weight: 500; color: var(--ink); flex: 1; }
+.sr-meta  { font-size: .72rem; color: var(--ink-mute); white-space: nowrap; }
+.search-result-empty {
+  padding: 10px 12px; font-size: .82rem; color: var(--ink-mute);
+}
+
+/* ---- Island overview markers ---- */
+.island-ov-marker {
+  width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+  font-size: .85rem; color: #8E8E93; background: rgba(0,0,0,.35);
+  border-radius: 50%; border: 1.5px solid rgba(142,142,147,.5);
+  cursor: pointer;
+}
+
+/* ---- Offline pill ---- */
+.offline-pill {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  background: rgba(255,59,48,.9); color: #fff;
+  font-size: .72rem; font-weight: 600; padding: 4px 12px;
+  border-radius: 20px; pointer-events: none; z-index: 1100;
+  letter-spacing: .02em;
+}
+
+/* ---- Pre-cache row ---- */
+.precache-row { margin-top: 10px; }
+.precache-btn {
+  width: 100%; font-family: inherit; font-size: .78rem; font-weight: 500;
+  color: var(--shallow); background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 12px; cursor: pointer; text-align: left;
+}
+.precache-btn:disabled { opacity: .5; cursor: not-allowed; }
+.precache-progress {
+  margin-top: 6px; display: flex; align-items: center; gap: 8px;
+}
+.precache-bar-wrap {
+  flex: 1; height: 4px; background: var(--line); border-radius: 2px; overflow: hidden;
+}
+.precache-bar { height: 100%; width: 0; background: var(--shallow); border-radius: 2px; transition: width .2s; }
+.precache-label { font-size: .7rem; color: var(--ink-mute); white-space: nowrap; }
 
 /* ---- Prefers-reduced-motion: disable spring + slide ---- */
 @media (prefers-reduced-motion: reduce) {
