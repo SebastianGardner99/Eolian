@@ -4,11 +4,10 @@
 // ============================================================
 // ---- State ----
 const state = {
-  depth: { surface: true, mid: true, lower: true },
-  type: new Set(Object.keys(FEATURE_TYPES)),
-  poiTypes: new Set(Object.keys(POI_TYPES)),
-  showAnchorages: false,
-  reachableOnly: false
+  depth:        { surface: true, mid: true, lower: true },
+  type:         new Set(Object.keys(FEATURE_TYPES)),
+  poiTypes:     new Set(Object.keys(POI_TYPES).filter((k) => k !== "island")),
+  showAnchorages: false
 };
 
 // ---- Map setup ----
@@ -260,6 +259,7 @@ function buildPois() {
   poiLayer.clearLayers();
   for (const id in poiMarkerById) delete poiMarkerById[id];
   POIS.forEach((poi) => {
+    if (poi.type === "island") return; // island overviews not rendered on map
     const m = L.marker([poi.lat, poi.lng], {
       icon: poiIcon(poi),
       title: poi.name
@@ -273,9 +273,8 @@ function buildPois() {
 
 // ---- Filtering ----
 function siteVisible(site) {
-  if (!state.depth[site._band])                            return false;
-  if (!state.type.has(site.type))                          return false;
-  if (state.reachableOnly && site._reach.level === "none") return false;
+  if (!state.depth[site._band])   return false;
+  if (!state.type.has(site.type)) return false;
   return true;
 }
 
@@ -717,9 +716,10 @@ function buildLayerToggles() {
     wrap.appendChild(div);
   });
 
-  // POI-type chips — restaurant_michelin merged into restaurant chip
+  // POI-type chips — restaurant_michelin merged into restaurant; island excluded entirely
   Object.entries(POI_TYPES).forEach(([key, pt]) => {
-    if (key === "restaurant_michelin") return; // merged into restaurant
+    if (key === "restaurant_michelin") return;
+    if (key === "island") return; // no chip rendered; ov-* markers not shown
     const count = (poiCounts[key] || 0) + (key === "restaurant" ? (poiCounts["restaurant_michelin"] || 0) : 0);
     if (!count) return;
     const div = document.createElement("div");
@@ -743,6 +743,25 @@ function buildLayerToggles() {
     });
     wrap.appendChild(div);
   });
+
+  // Collapse: show only Snorkel site, Beach, Restaurant by default
+  const DEFAULT_CHIPS = new Set(["snorkel", "beach", "restaurant"]);
+  const allChips  = Array.from(wrap.querySelectorAll(".type-chip"));
+  const extraChips = allChips.filter(
+    (c) => !DEFAULT_CHIPS.has(c.dataset.type) && !DEFAULT_CHIPS.has(c.dataset.poitype)
+  );
+  if (extraChips.length > 0) {
+    extraChips.forEach((c) => c.classList.add("chips-hidden"));
+    const moreChip = document.createElement("div");
+    moreChip.className = "type-chip chip-more";
+    moreChip.innerHTML = `<span class="tc-label">… see more</span>`;
+    moreChip.addEventListener("click", () => {
+      const expanding = moreChip.classList.toggle("chip-expanded");
+      extraChips.forEach((c) => c.classList.toggle("chips-hidden", !expanding));
+      moreChip.querySelector(".tc-label").textContent = expanding ? "see less" : "… see more";
+    });
+    wrap.appendChild(moreChip);
+  }
 }
 
 // ---- Coordinate overrides (localStorage) ----
@@ -1769,11 +1788,12 @@ function initAddSite() {
 // ---- Community sites (Firestore) --------------------------------
 // ================================================================
 
-let _communityLayer   = null;              // L.layerGroup, created in _initFirebaseSync
-const _communityMarkers = new Map();       // docId → Leaflet marker
-let   _communityDocs    = [];              // latest snapshot, used for export
-const _seenCommunityIds = new Set();       // tracks known doc IDs for new-pin toasts
+let _communityLayer     = null;              // L.layerGroup, created in _initFirebaseSync
+const _communityMarkers = new Map();         // docId → Leaflet marker
+let   _communityDocs    = [];                // latest snapshot, used for export
+const _seenCommunityIds = new Set();         // tracks known doc IDs for new-pin toasts
 let   _firebaseReady    = false;
+let   _openCommunityDocId = null;            // id of the community doc currently in the drawer
 
 // ---- Toast ----
 function _toast(msg, duration) {
@@ -1902,14 +1922,17 @@ function _buildCommunityMarker(doc) {
 
 // ---- Community detail drawer ----
 function openCommunityDrawer(id) {
-  const doc = _communityDocs.find((d) => d.id === id);
-  if (!doc) return;
-  const ft          = FEATURE_TYPES[doc.type] || POI_TYPES[doc.type];
-  const displayType = doc.otherType || (ft ? ft.label : doc.type || "Site");
-  const timeStr     = _relTime(doc.createdAt);
-  const dateStr     = doc.createdAt?.toDate
-    ? doc.createdAt.toDate().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+  const cdoc = _communityDocs.find((d) => d.id === id);
+  if (!cdoc) return;
+  _openCommunityDocId = id;
+
+  const ft          = FEATURE_TYPES[cdoc.type] || POI_TYPES[cdoc.type];
+  const displayType = cdoc.otherType || (ft ? ft.label : cdoc.type || "Site");
+  const timeStr     = _relTime(cdoc.createdAt);
+  const dateStr     = cdoc.createdAt?.toDate
+    ? cdoc.createdAt.toDate().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
     : "";
+  const isOwner = !!(cdoc.ownerUid && window.AtlasSync?.uid && cdoc.ownerUid === window.AtlasSync.uid);
 
   const body = `
     <div class="d-hero">
@@ -1917,32 +1940,75 @@ function openCommunityDrawer(id) {
         ${ft ? `<span class="d-chip access-shore">${ft.glyph} ${displayType}</span>` : ""}
         <span class="d-chip access-shore" style="background:rgba(99,179,237,.15);color:#2b6cb0">Community</span>
       </div>
-      <h2 class="d-title">${doc.name}</h2>
-      <div class="d-sub">${doc.island || "Aeolian Islands"}</div>
+      <h2 class="d-title">${cdoc.name}</h2>
+      <div class="d-sub">${cdoc.island || "Aeolian Islands"}</div>
     </div>
     <div class="d-section-h">Added by</div>
     <div class="d-sea-state" style="margin-bottom:12px">
       <span style="font-size:.82rem">
-        <strong>${doc.author}</strong> · ${timeStr}${dateStr ? " · " + dateStr : ""}
+        <strong>${cdoc.author}</strong> · ${timeStr}${dateStr ? " · " + dateStr : ""}
       </span>
     </div>
     <div class="d-section-h">Details</div>
     <table class="d-table">
       <tr><th>Type</th><td>${displayType}</td></tr>
-      ${doc.depth != null ? `<tr><th>Depth</th><td>~${doc.depth} m</td></tr>` : ""}
-      ${doc.access ? `<tr><th>Access</th><td>${ACCESS_LABEL[doc.access] || doc.access}</td></tr>` : ""}
-      ${doc.notes  ? `<tr><th>Notes</th><td>${doc.notes}</td></tr>` : ""}
-      <tr><th>Coordinates</th><td>${doc.lat.toFixed(4)}°N, ${doc.lng.toFixed(4)}°E
+      ${cdoc.depth != null ? `<tr><th>Depth</th><td>~${cdoc.depth} m</td></tr>` : ""}
+      ${cdoc.access ? `<tr><th>Access</th><td>${ACCESS_LABEL[cdoc.access] || cdoc.access}</td></tr>` : ""}
+      ${cdoc.notes  ? `<tr><th>Notes</th><td>${cdoc.notes}</td></tr>` : ""}
+      <tr><th>Coordinates</th><td>${cdoc.lat.toFixed(4)}°N, ${cdoc.lng.toFixed(4)}°E
         <div class="approx-flag">Community-added — verify before visiting</div></td></tr>
-    </table>`;
+    </table>
+    ${isOwner ? `<div id="d-delete-section" class="d-delete-section">
+      <button id="d-delete-btn" class="d-delete-btn" type="button">Delete this site</button>
+    </div>` : ""}`;
 
   document.getElementById("drawer-body").innerHTML = body;
+  if (isOwner) _wireDeleteSection(cdoc);
+
   const drawer = document.getElementById("drawer");
   drawer.classList.add("open");
   drawer.removeAttribute("aria-hidden");
   document.getElementById("drawer-scrim").hidden = false;
 }
 window.openCommunityDrawer = openCommunityDrawer;
+
+// ---- Inline delete confirm (no window.confirm) ----
+function _wireDeleteSection(cdoc) {
+  function bind() {
+    const btn = document.getElementById("d-delete-btn");
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      const sec = document.getElementById("d-delete-section");
+      if (!sec) return;
+      sec.innerHTML = `
+        <p class="d-delete-msg" id="d-delete-msg-text"></p>
+        <div class="d-delete-btns">
+          <button id="d-del-cancel"  class="ash-cancel-btn"       type="button">Cancel</button>
+          <button id="d-del-confirm" class="d-delete-confirm-btn" type="button">Delete</button>
+        </div>`;
+      document.getElementById("d-delete-msg-text").textContent =
+        `Delete "${cdoc.name}"? This removes it for everyone.`;
+      document.getElementById("d-del-cancel").addEventListener("click", () => {
+        sec.innerHTML = `<button id="d-delete-btn" class="d-delete-btn" type="button">Delete this site</button>`;
+        bind();
+      });
+      document.getElementById("d-del-confirm").addEventListener("click", () => {
+        if (!window.AtlasSync) return;
+        const confirmBtn = document.getElementById("d-del-confirm");
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = "Deleting…";
+        window.AtlasSync.deleteSite(cdoc.id)
+          .then(() => {
+            closeDrawer();
+            _openCommunityDocId = null;
+            _toast(`"${cdoc.name}" deleted`);
+          })
+          .catch((err) => _toast("Delete failed: " + err.message));
+      });
+    });
+  }
+  bind();
+}
 
 // ---- Export community sites formatted for data.js ----
 function _formatCommunitySiteAsCode(doc) {
@@ -2002,11 +2068,15 @@ function _onCommunitySnapshot(docs, meta) {
   const badge = document.getElementById("community-count");
   if (badge) badge.textContent = valid.length;
 
-  // Remove markers for deleted docs (shouldn't happen with immutable rules, but defensive)
+  // Remove markers for deleted docs; close drawer if the deleted doc is open
   _communityMarkers.forEach((m, id) => {
     if (!valid.find((d) => d.id === id)) {
       if (_communityLayer) _communityLayer.removeLayer(m);
       _communityMarkers.delete(id);
+      if (_openCommunityDocId === id) {
+        closeDrawer();
+        _openCommunityDocId = null;
+      }
     }
   });
 
@@ -2061,6 +2131,158 @@ function _initFirebaseSync() {
 }
 
 // ================================================================
+// ---- Nearby ----
+function _haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.asin(Math.sqrt(a));
+}
+
+function initNearby() {
+  const toggle = document.getElementById("nearby-toggle");
+  const body   = document.getElementById("nearby-body");
+  if (!toggle || !body) return;
+
+  toggle.addEventListener("click", () => {
+    const expanded = toggle.getAttribute("aria-expanded") === "true";
+    toggle.setAttribute("aria-expanded", String(!expanded));
+    toggle.querySelector(".nearby-toggle-caret").textContent = expanded ? "▸" : "▾";
+    body.hidden = expanded;
+    if (!expanded && !_nearbyLoaded) _runNearby();
+  });
+
+  document.getElementById("nearby-refresh").addEventListener("click", _runNearby);
+}
+
+let _nearbyLoaded = false;
+
+function _nearbyItems(fromLat, fromLng) {
+  const candidates = [];
+
+  SITES.forEach((site) => {
+    if (!siteVisible(site)) return;
+    const ft = FEATURE_TYPES[site.type];
+    candidates.push({
+      kind: "site",
+      id:   site.id,
+      name: site.name,
+      glyph: ft ? ft.glyph : "📍",
+      sub:  (ft ? ft.label : site.type) + (site.island ? " · " + site.island : ""),
+      lat:  site.lat,
+      lng:  site.lng,
+      dist: _haversineKm(fromLat, fromLng, site.lat, site.lng)
+    });
+  });
+
+  POIS.forEach((poi) => {
+    if (poi.type === "island") return;
+    if (!state.poiTypes.has(poi.type)) return;
+    const pt = POI_TYPES[poi.type];
+    candidates.push({
+      kind:  "poi",
+      id:    poi.id,
+      name:  poi.name,
+      glyph: pt ? pt.glyph : "📌",
+      sub:   (pt ? pt.label : poi.type) + (poi.island ? " · " + poi.island : ""),
+      lat:   poi.lat,
+      lng:   poi.lng,
+      dist:  _haversineKm(fromLat, fromLng, poi.lat, poi.lng)
+    });
+  });
+
+  const communityTog = document.getElementById("tog-community");
+  if (!communityTog || communityTog.checked) {
+    _communityDocs.forEach((cdoc) => {
+      const ft = FEATURE_TYPES[cdoc.type] || POI_TYPES[cdoc.type];
+      candidates.push({
+        kind:  "community",
+        id:    cdoc.id,
+        name:  cdoc.name,
+        glyph: ft ? ft.glyph : "🤿",
+        sub:   (ft ? ft.label : cdoc.type || "Site") + (cdoc.island ? " · " + cdoc.island : ""),
+        lat:   cdoc.lat,
+        lng:   cdoc.lng,
+        dist:  _haversineKm(fromLat, fromLng, cdoc.lat, cdoc.lng)
+      });
+    });
+  }
+
+  candidates.sort((a, b) => a.dist - b.dist);
+  return candidates.slice(0, 12);
+}
+
+function _renderNearbyList(items, fromLabel) {
+  const status = document.getElementById("nearby-status");
+  const list   = document.getElementById("nearby-list");
+  if (!status || !list) return;
+
+  status.textContent = `Showing nearest to ${fromLabel}`;
+  list.innerHTML = items.map((item) => {
+    const distTxt = item.dist < 1
+      ? Math.round(item.dist * 1000) + " m"
+      : item.dist.toFixed(1) + " km";
+    return `<li class="nearby-item" data-kind="${item.kind}" data-id="${item.id}" tabindex="0" role="button">
+      <span class="nearby-glyph">${item.glyph}</span>
+      <span class="nearby-info">
+        <span class="nearby-name">${item.name}</span>
+        <span class="nearby-sub">${item.sub}</span>
+      </span>
+      <span class="nearby-dist">${distTxt}</span>
+    </li>`;
+  }).join("");
+
+  list.querySelectorAll(".nearby-item").forEach((li) => {
+    li.addEventListener("click", () => _activateNearbyItem(li.dataset.kind, li.dataset.id));
+    li.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") _activateNearbyItem(li.dataset.kind, li.dataset.id); });
+  });
+}
+
+function _activateNearbyItem(kind, id) {
+  if (kind === "site") {
+    const m = markerById[id];
+    if (m) siteLayer.zoomToShowLayer(m, () => { m.openPopup(); openDrawer(id); });
+    else openDrawer(id);
+  } else if (kind === "poi") {
+    const m = poiMarkerById[id];
+    if (m) poiLayer.zoomToShowLayer(m, () => m.openPopup());
+  } else if (kind === "community") {
+    const m = _communityMarkers.get(id);
+    if (m && _communityLayer) _communityLayer.zoomToShowLayer
+      ? _communityLayer.zoomToShowLayer(m, () => openCommunityDrawer(id))
+      : openCommunityDrawer(id);
+    else openCommunityDrawer(id);
+  }
+}
+
+function _runNearby() {
+  const status = document.getElementById("nearby-status");
+  if (status) status.textContent = "Finding your location…";
+  _nearbyLoaded = true;
+
+  if (!navigator.geolocation) {
+    const c = map.getCenter();
+    _renderNearbyList(_nearbyItems(c.lat, c.lng), "map centre");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { latitude: lat, longitude: lng } = pos.coords;
+      _renderNearbyList(_nearbyItems(lat, lng), "your location");
+    },
+    () => {
+      const c = map.getCenter();
+      _renderNearbyList(_nearbyItems(c.lat, c.lng), "map centre (location unavailable)");
+    },
+    { timeout: 8000, maximumAge: 60000 }
+  );
+}
+
+// ================================================================
 // ---- Init ----
 function init() {
   loadCoordOverrides();
@@ -2074,11 +2296,6 @@ function init() {
     state.showAnchorages = e.target.checked;
     if (e.target.checked) anchorLayer.addTo(map); else map.removeLayer(anchorLayer);
   });
-  document.getElementById("tog-reachable").addEventListener("change", (e) => {
-    state.reachableOnly = e.target.checked;
-    applyFilters();
-  });
-
   document.getElementById("tog-wind-overlay").addEventListener("change", (e) => {
     if (e.target.checked) {
       startWindAnimation();
@@ -2144,6 +2361,7 @@ function init() {
 
   initAddSite();
   loadUserSites();
+  initNearby();
 
   _buildExposureCache();
   applyFilters();
