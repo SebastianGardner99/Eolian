@@ -8,7 +8,7 @@
 //                                            (atlas-shell-v3)
 //
 // Bump SHELL_VER on every deploy so all clients pull fresh files on next load.
-const SHELL_VER = "atlas-shell-v3";
+const SHELL_VER = "atlas-shell-v4";
 const TILE_VER  = "atlas-tiles-v1";
 const TILE_MAX  = 2000; // max tile cache entries (FIFO eviction)
 
@@ -86,6 +86,9 @@ self.addEventListener("activate", (e) => {
 
 // ── Fetch ─────────────────────────────────────────────────────────────────────
 self.addEventListener("fetch", (e) => {
+  // Cache API only supports GET; never intercept HEAD/POST/etc.
+  if (e.request.method !== "GET") return;
+
   const url = new URL(e.request.url);
 
   // 1. Bypass: live APIs and Firebase — always network, never intercepted

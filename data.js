@@ -847,3 +847,21 @@ const LAND_MASSES = [
   { name: "Pietra del Bagno",  lat: 38.5036, lng: 14.8975, r: 70   },
   { name: "Faraglioni Lipari", lat: 38.4386, lng: 14.9430, r: 90   }
 ];
+// ===================================================================
+// Spearfishing legality rules (used by _buildSpearClassification in app.js)
+// Banned zones are confidently red; everything else is "verify" amber —
+// the app never asserts that spearfishing IS legal anywhere.
+// ===================================================================
+const SPEAR_RULES = {
+  bannedZones: [
+    { id: "capo-graziano",   reason: "Capo Graziano archaeological protection zone — diving/fishing strictly prohibited, heavy fines", radius: 600 },
+    { id: "wreck-capistello", reason: "Capistello archaeological zone — authorised diving only, no fishing", radius: 500 },
+    { id: "la-canna",        reason: "La Canna protected nature reserve — fishing prohibited", radius: 400 },
+    { id: "strombolicchio",  reason: "Strombolicchio integral nature reserve — fishing prohibited", radius: 400 }
+  ],
+  // Art. 129: no spearfishing within 500 m of beaches frequented by bathers
+  beachRadius: 500,
+  // No spearfishing within 500 m of ports/harbour entrances
+  portIds: ["alicudi-harbour", "spiaggia-pecorini"],
+  portRadius: 500
+};
