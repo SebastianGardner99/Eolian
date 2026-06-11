@@ -415,6 +415,14 @@ body {
 .wx-cell-sub   { font-size: .65rem; color: var(--ink-mute); margin-top: 3px; }
 
 .wx-updated { font-size: .65rem; color: var(--ink-mute); }
+.wx-stale-badge { color: #ffd76a; }
+
+.wx-verdict.wx-good { background: rgba(94,224,198,.14);  color: #5ee0c6; }
+.wx-verdict.wx-ok   { background: rgba(67,198,232,.14);  color: #43c6e8; }
+.wx-verdict.wx-warn { background: rgba(255,215,106,.14); color: #ffd76a; }
+.wx-verdict.wx-bad  { background: rgba(224,80,80,.14);   color: #e05050; }
+
+.wx-error-retry { cursor: pointer; text-decoration: underline; }
 
 /* ================================================================
    Drag-to-reposition banner

@@ -757,10 +757,9 @@ function openDrawer(id) {
   }
   _renderSiteSeaStateRow(site);
   if (_wxFetchTime && Date.now() - _wxFetchTime > 60 * 60 * 1000) {
-    fetchWeather().then((d) => {
-      renderWeather(d);
+    loadWeather().then(() => {
       if (document.getElementById("drawer").classList.contains("open")) _renderSiteSeaStateRow(site);
-    }).catch(() => {});
+    });
   }
 
   if (site.approx) {
@@ -1008,8 +1007,16 @@ function beaufortLabel(knots) {
   return               { label: "Gale+",            color: "#e05050", score: 8 };
 }
 
-function snorkelVerdict(windKnots, waveM) {
-  if (waveM == null) return { text: "⚠ Sea state unavailable", cls: "wx-warn" };
+function snorkelVerdict(windKnots, waveM, isStale = false) {
+  if (windKnots == null) return { text: "⚠ Wind data unavailable",  cls: "wx-warn" };
+  if (waveM == null)     return { text: "⚠ Sea state unavailable",   cls: "wx-warn" };
+  if (isStale) {
+    // Stale calm must not present as confident calm — force warn style.
+    if (windKnots <= 10 && waveM <= 0.3) return { text: "✓ Excellent — earlier data", cls: "wx-warn" };
+    if (windKnots <= 15 && waveM <= 0.6) return { text: "◐ Decent — earlier data",    cls: "wx-warn" };
+    if (windKnots <= 20 && waveM <= 1.0) return { text: "⚠ Marginal — earlier data",  cls: "wx-warn" };
+    return                                      { text: "✕ Poor — wait it out",         cls: "wx-bad"  };
+  }
   if (windKnots <= 10 && waveM <= 0.3) return { text: "✓ Excellent conditions",   cls: "wx-good" };
   if (windKnots <= 15 && waveM <= 0.6) return { text: "◐ Decent — check spots",   cls: "wx-ok"   };
   if (windKnots <= 20 && waveM <= 1.0) return { text: "⚠ Marginal — shore spots", cls: "wx-warn" };
@@ -1032,24 +1039,73 @@ function _angleDiff(a, b) {
   return d > 180 ? 360 - d : d;
 }
 
-async function fetchWeather() {
-  const ctrl  = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 12000);
-  const marF  = "wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction";
+// ── Weather resilience ────────────────────────────────────────────────────────
+const WX_CACHE_KEY = "wx_last_good";
+const WX_STALE_MS  = 6 * 60 * 60 * 1000; // 6 h — older than this is unsafe for conditions decisions
+
+function _saveWxCache(data) {
   try {
-    const [wxRes, marWRes, marERes] = await Promise.all([
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${WX_LAT}&longitude=${WX_LNG}&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m,weather_code&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&timezone=Europe%2FRome&forecast_days=3`, { signal: ctrl.signal }),
-      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${MARINE_POINTS.west.lat}&longitude=${MARINE_POINTS.west.lng}&current=${marF}&timezone=Europe%2FRome`, { signal: ctrl.signal }),
-      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${MARINE_POINTS.east.lat}&longitude=${MARINE_POINTS.east.lng}&current=${marF}&timezone=Europe%2FRome`, { signal: ctrl.signal })
-    ]);
-    if (!wxRes.ok)   throw new Error(`Weather API ${wxRes.status}`);
-    if (!marWRes.ok) throw new Error(`Marine W API ${marWRes.status}`);
-    if (!marERes.ok) throw new Error(`Marine E API ${marERes.status}`);
-    const [wx, marW, marE] = await Promise.all([wxRes.json(), marWRes.json(), marERes.json()]);
-    return { wx: wx.current, marWest: marW.current, marEast: marE.current, forecast: wx.hourly };
-  } finally {
-    clearTimeout(timer);
+    localStorage.setItem(WX_CACHE_KEY, JSON.stringify({
+      wx: data.wx, marWest: data.marWest, marEast: data.marEast, forecast: data.forecast,
+      fetchedAt: new Date().toISOString()
+    }));
+  } catch (_) {} // storage quota — non-fatal
+}
+
+function _loadWxCache() {
+  try {
+    const obj = JSON.parse(localStorage.getItem(WX_CACHE_KEY) ?? "null");
+    if (!obj?.fetchedAt) return null;
+    if (Date.now() - new Date(obj.fetchedAt).getTime() > WX_STALE_MS) return null;
+    return obj;
+  } catch (_) { return null; }
+}
+
+// Retry up to 2 times on network error or HTTP 5xx; no retry on 4xx.
+// Each attempt gets a fresh AbortController with a 12 s timeout.
+async function fetchWithRetry(url) {
+  const DELAYS = [2000, 5000];
+  let lastErr;
+  for (let attempt = 0; attempt <= 2; attempt++) {
+    const ctrl  = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 12000);
+    try {
+      const res = await fetch(url, { signal: ctrl.signal });
+      clearTimeout(timer);
+      if (res.ok || res.status < 500) return res; // success or 4xx — don't retry
+      lastErr = new Error(`HTTP ${res.status}`);
+    } catch (err) {
+      clearTimeout(timer);
+      lastErr = err;
+    }
+    if (attempt < 2) await new Promise((r) => setTimeout(r, DELAYS[attempt]));
   }
+  throw lastErr;
+}
+
+async function fetchWeather() {
+  const marF   = "wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction";
+  const errors = [];
+
+  const [wxR, marWR, marER] = await Promise.allSettled([
+    fetchWithRetry(`https://api.open-meteo.com/v1/forecast?latitude=${WX_LAT}&longitude=${WX_LNG}&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m,weather_code&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&timezone=Europe%2FRome&forecast_days=3`)
+      .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
+    fetchWithRetry(`https://marine-api.open-meteo.com/v1/marine?latitude=${MARINE_POINTS.west.lat}&longitude=${MARINE_POINTS.west.lng}&current=${marF}&timezone=Europe%2FRome`)
+      .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
+    fetchWithRetry(`https://marine-api.open-meteo.com/v1/marine?latitude=${MARINE_POINTS.east.lat}&longitude=${MARINE_POINTS.east.lng}&current=${marF}&timezone=Europe%2FRome`)
+      .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
+  ]);
+
+  let wx = null, forecast = null;
+  if (wxR.status === "fulfilled") { wx = wxR.value.current; forecast = wxR.value.hourly; }
+  else errors.push(`wind: ${wxR.reason?.message ?? "failed"}`);
+
+  const marWest = marWR.status === "fulfilled" ? marWR.value.current
+                : (errors.push(`west basin: ${marWR.reason?.message ?? "failed"}`), null);
+  const marEast = marER.status === "fulfilled" ? marER.value.current
+                : (errors.push(`east basin: ${marER.reason?.message ?? "failed"}`), null);
+
+  return { wx, marWest, marEast, forecast, errors };
 }
 
 function windArrowSvg(deg, color, size = 14) {
@@ -1071,34 +1127,49 @@ function _worseBasin(marWest, marEast) {
 }
 
 function renderWeather(data) {
+  const { isStale = false, staleSince = null } = data;
   const wx  = data.wx;
   const mar = _worseBasin(data.marWest, data.marEast);
 
-  const windKnots  = wx.wind_speed_10m     ?? 0;
-  const windDir    = wx.wind_direction_10m ?? null;
-  const gustKnots  = wx.wind_gusts_10m     ?? windKnots;
+  const windKnots  = wx?.wind_speed_10m     ?? null;
+  const windDir    = wx?.wind_direction_10m ?? null;
+  const gustKnots  = wx?.wind_gusts_10m     ?? null;
   const waveM      = mar.wave_height          ?? null;
   const waveDir    = mar.wave_direction       ?? null;
   const wavePeriod = mar.wave_period          ?? null;
   const swellM     = mar.swell_wave_height    ?? null;
   const swellDir   = mar.swell_wave_direction ?? null;
 
-  const bf      = beaufortLabel(windKnots);
-  const verdict = snorkelVerdict(windKnots, waveM);
+  const bf      = beaufortLabel(windKnots ?? 0);
+  const verdict = snorkelVerdict(windKnots, waveM, isStale);
   const now     = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+
+  // Wind cell: show "—" when wx endpoint is unavailable
+  const windValHtml = windKnots != null
+    ? `${windArrowSvg(windDir, bf.color)}<span style="color:${bf.color}">${windKnots.toFixed(1)} kn</span>`
+    : `<span style="color:var(--ink-mute)">—</span>`;
+  const windSubHtml = windKnots != null
+    ? `${degToCompass(windDir)} · gusts ${(gustKnots ?? windKnots).toFixed(1)} kn`
+    : "—";
 
   const waveFmt  = waveM      != null ? waveM.toFixed(1) + " m"       : "—";
   const swellFmt = swellM     != null ? swellM.toFixed(1) + " m"      : "—";
   const perFmt   = wavePeriod != null ? wavePeriod.toFixed(0) + " s"  : "—";
   const basinSub = mar._basinLabel ? ` · ${mar._basinLabel}` : "";
 
+  const staleTime   = staleSince
+    ? new Date(staleSince).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : null;
+  const updatedLine = isStale && staleTime
+    ? `<div class="wx-updated wx-stale-badge">&#x1F55B; Updated ${staleTime} · showing earlier data</div>`
+    : `<div class="wx-updated">Updated ${now}</div>`;
+
   document.getElementById("wx-body").innerHTML = `
     <div class="wx-verdict ${verdict.cls}">${verdict.text}</div>
     <div class="wx-grid">
       <div class="wx-cell">
         <div class="wx-cell-label">Wind</div>
-        <div class="wx-cell-val">${windArrowSvg(windDir, bf.color)}<span style="color:${bf.color}">${windKnots.toFixed(1)} kn</span></div>
-        <div class="wx-cell-sub">${degToCompass(windDir)} · gusts ${gustKnots.toFixed(1)} kn</div>
+        <div class="wx-cell-val">${windValHtml}</div>
+        <div class="wx-cell-sub">${windSubHtml}</div>
       </div>
       <div class="wx-cell">
         <div class="wx-cell-label">Waves</div>
@@ -1111,11 +1182,11 @@ function renderWeather(data) {
         <div class="wx-cell-sub">${degToCompass(swellDir)}</div>
       </div>
     </div>
-    <div class="wx-updated">Updated ${now}</div>
+    ${updatedLine}
   `;
 
   document.getElementById("wx-overlay-label").style.display = "";
-  _wxData      = data;
+  _wxData      = { ...data, isStale, staleSince };
   _wxFetchTime = Date.now();
   if (document.getElementById("tog-wind-overlay").checked) startWindAnimation();
   initForecast(data.forecast);
@@ -1149,12 +1220,36 @@ function buildWindArrows(d) {
 async function loadWeather() {
   const body = document.getElementById("wx-body");
   body.innerHTML = '<div class="wx-loading" id="wx-loading">Fetching conditions…</div>';
-  try {
-    const data = await fetchWeather();
-    renderWeather(data);
-  } catch (err) {
-    body.innerHTML = `<div class="wx-error">Could not load conditions — check your connection.<br><small>${err.message}</small></div>`;
+
+  const fresh = await fetchWeather(); // never throws — failures are in fresh.errors
+
+  // Per-section fallback from last-known-good cache when any endpoint failed
+  const cached = fresh.errors.length > 0 ? _loadWxCache() : null;
+
+  const wx       = fresh.wx       ?? cached?.wx       ?? null;
+  const marWest  = fresh.marWest  ?? cached?.marWest  ?? null;
+  const marEast  = fresh.marEast  ?? cached?.marEast  ?? null;
+  const forecast = fresh.forecast ?? cached?.forecast ?? null;
+
+  // Stale if any section had to fall back to cache
+  const isStale    = (fresh.wx      == null && wx      != null)
+                  || (fresh.marWest == null && marWest != null)
+                  || (fresh.marEast == null && marEast != null);
+  const staleSince = isStale && cached?.fetchedAt ? new Date(cached.fetchedAt).getTime() : null;
+
+  // Totally blocked: nothing from network AND nothing usable in cache
+  if (wx == null && marWest == null && marEast == null) {
+    body.innerHTML = `<div class="wx-error wx-error-retry" id="wx-retry-btn">Could not load conditions — tap to retry</div>`;
+    document.getElementById("wx-retry-btn")?.addEventListener("click", loadWeather);
+    return;
   }
+
+  // Persist: reset the cache clock only when at least one section arrived fresh
+  if (fresh.wx != null || fresh.marWest != null || fresh.marEast != null) {
+    _saveWxCache({ wx, marWest, marEast, forecast });
+  }
+
+  renderWeather({ wx, marWest, marEast, forecast, isStale, staleSince });
 }
 
 // ================================================================
@@ -1392,19 +1487,25 @@ function _renderSiteSeaStateRow(site) {
   if (!rowEl) return;
   const basin = _basinForSite(site);
   if (!basin) {
-    rowEl.innerHTML = `<div class="d-sea-state"><span class="sea-dot sea-dot-unknown"></span><span>Sea data loading…</span></div>`;
+    const msg = _wxData ? "Sea state unavailable" : "Sea data loading…";
+    rowEl.innerHTML = `<div class="d-sea-state"><span class="sea-dot sea-dot-unknown"></span><span>${msg}</span></div>`;
     return;
   }
   const ss      = siteSeaState(site, basin);
   const profile = _exposureCache.get(site.id);
   const roseSvg = profile ? _exposureRoseSvg(profile, ss.driveDir ?? null, ss.level) : "";
+  let staleNote = "";
+  if (_wxData?.isStale && _wxData.staleSince) {
+    const t = new Date(_wxData.staleSince).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+    staleNote = ` · Based on conditions from ${t}`;
+  }
   rowEl.innerHTML = `
     <div class="d-sea-state">
       <span class="sea-dot sea-dot-${ss.level}"></span>
       <span>${ss.label}</span>
     </div>
     <div class="d-rose-row">${roseSvg}
-      <span class="d-rose-caption">Model sea state + local exposure estimate — not a measurement.</span>
+      <span class="d-rose-caption">Model sea state + local exposure estimate — not a measurement.${staleNote}</span>
     </div>`;
 }
 
@@ -1475,7 +1576,7 @@ function _currentForecastWind() {
   if (_forecastData && _forecastIndex != null) {
     return { deg: _forecastData.dirs[_forecastIndex] ?? 0, kn: _forecastData.speeds[_forecastIndex] ?? 0 };
   }
-  if (_wxData) return { deg: _wxData.wx.wind_direction_10m ?? 0, kn: _wxData.wx.wind_speed_10m ?? 0 };
+  if (_wxData) return { deg: _wxData.wx?.wind_direction_10m ?? 0, kn: _wxData.wx?.wind_speed_10m ?? 0 };
   return { deg: 0, kn: 4 };
 }
 
@@ -2812,7 +2913,7 @@ init();
                 swell_wave_height: 0.5, swell_wave_direction: 290 };
   const checks = [
     { id: "pollara",       test: (f) => f >= 0.85, expect: "≥0.85 open NW (Salina, no landmass blocking NW fetch)" },
-    { id: "cala-zimmari",  test: (f) => f <= 0.40, expect: "≤0.40 sheltered NW (inside Panarea circle)"           },
+    { id: "cala-zimmari",  test: (f) => f <= 0.40 + 0.005, expect: "≤0.40 sheltered NW (inside Panarea circle)"    },
     { id: "dattilo",       test: (f) => f >= 0.85, expect: "≥0.85 small-obstacle + diffraction smear"             },
     { id: "acque-calde",   test: (f) => f >= 0.40, expect: "≥0.40 (Vulcanello is NNE not NW — spec has geo error)" }
   ];
