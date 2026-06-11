@@ -2,6 +2,9 @@
 // Alonissos — Gardner's Guide
 // Application logic (catamaran edition)
 // ============================================================
+// ---- Build ----
+const BUILD = "2026-06-11-1";
+
 // ---- State ----
 const state = {
   depth:        { surface: true, mid: true, lower: true },
@@ -2638,9 +2641,36 @@ function initPreCache() {
   });
 }
 
+function initSW() {
+  if (!("serviceWorker" in navigator)) return;
+  // True if a SW was already controlling this page when it loaded — i.e. not a fresh install.
+  // Only show the update toast when there was an existing version to replace.
+  const hadController = !!navigator.serviceWorker.controller;
+
+  navigator.serviceWorker.ready.then((reg) => {
+    // A SW is in the waiting slot (rare with skipWaiting, but handle it)
+    if (reg.waiting && hadController) {
+      _toast("Updated — reload to get the latest version");
+    }
+    reg.addEventListener("updatefound", () => {
+      const next = reg.installing;
+      if (!next) return;
+      let toasted = false;
+      next.addEventListener("statechange", () => {
+        if (!toasted && hadController &&
+            (next.state === "installed" || next.state === "activated")) {
+          toasted = true;
+          _toast("Updated — reload to get the latest version");
+        }
+      });
+    });
+  }).catch(() => {});
+}
+
 // ================================================================
 // ---- Init ----
 function init() {
+  console.info("Atlas build", BUILD);
   loadCoordOverrides();
   buildDepthFilters();
   buildLayerToggles();
@@ -2727,6 +2757,7 @@ function init() {
   initSearch();
   initOffline();
   initPreCache();
+  initSW();
 
   _buildExposureCache();
   applyFilters();
