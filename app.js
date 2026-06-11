@@ -917,13 +917,13 @@ function buildLayerToggles() {
     selRow.innerHTML = `<button class="sel-btn">Select all</button><button class="sel-btn sel-btn-desel">Deselect all</button>`;
     selRow.querySelector(".sel-btn").addEventListener("click", () => {
       allChips.forEach((c) => c.classList.remove("off"));
-      state.types    = new Set(Object.keys(FEATURE_TYPES));
+      state.type     = new Set(Object.keys(FEATURE_TYPES));
       state.poiTypes = new Set(Object.keys(POI_TYPES));
       applyFilters();
     });
     selRow.querySelector(".sel-btn-desel").addEventListener("click", () => {
       allChips.forEach((c) => c.classList.add("off"));
-      state.types    = new Set();
+      state.type     = new Set();
       state.poiTypes = new Set();
       applyFilters();
     });

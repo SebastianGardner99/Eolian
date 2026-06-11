@@ -1,6 +1,6 @@
 // sw.js — Aeolian Atlas service worker
 // Bump SHELL_VER to force a new install after changing app shell files.
-const SHELL_VER = "atlas-shell-v1";
+const SHELL_VER = "atlas-shell-v2";
 const TILE_VER  = "atlas-tiles-v1";
 const TILE_MAX  = 2000; // max entries in tile cache (FIFO eviction)
 
