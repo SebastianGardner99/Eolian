@@ -168,7 +168,7 @@ SITES.forEach((s) => {
 function depthIcon(site, dragging = false, adjusted = false) {
   const color = DEPTH_BANDS[site._band].color;
   const glyph = FEATURE_TYPES[site.type].glyph;
-  const size  = 26;
+  const size  = 22;
   return L.divIcon({
     className: "",
     html: `<div class="depth-marker${dragging ? " drag-active" : ""}${adjusted ? " pos-adjusted" : ""}" style="--mk:${color}">
@@ -249,9 +249,9 @@ function poiIcon(poi, adjusted = false) {
   return L.divIcon({
     className: "",
     html: `<div class="poi-marker${adjusted ? " pos-adjusted" : ""}" style="--pt:${pt.color}">${pt.glyph}</div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-    popupAnchor: [0, -14]
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+    popupAnchor: [0, -11]
   });
 }
 
@@ -911,12 +911,31 @@ function buildLayerToggles() {
     const moreChip = document.createElement("div");
     moreChip.className = "type-chip chip-more";
     moreChip.innerHTML = `<span class="tc-label">… see more</span>`;
+
+    const selRow = document.createElement("div");
+    selRow.className = "sel-all-row chips-hidden";
+    selRow.innerHTML = `<button class="sel-btn">Select all</button><button class="sel-btn sel-btn-desel">Deselect all</button>`;
+    selRow.querySelector(".sel-btn").addEventListener("click", () => {
+      allChips.forEach((c) => c.classList.remove("off"));
+      state.types    = new Set(Object.keys(FEATURE_TYPES));
+      state.poiTypes = new Set(Object.keys(POI_TYPES));
+      applyFilters();
+    });
+    selRow.querySelector(".sel-btn-desel").addEventListener("click", () => {
+      allChips.forEach((c) => c.classList.add("off"));
+      state.types    = new Set();
+      state.poiTypes = new Set();
+      applyFilters();
+    });
+
     moreChip.addEventListener("click", () => {
       const expanding = moreChip.classList.toggle("chip-expanded");
       extraChips.forEach((c) => c.classList.toggle("chips-hidden", !expanding));
+      selRow.classList.toggle("chips-hidden", !expanding);
       moreChip.querySelector(".tc-label").textContent = expanding ? "see less" : "… see more";
     });
     wrap.appendChild(moreChip);
+    wrap.appendChild(selRow);
   }
 }
 
@@ -2009,7 +2028,7 @@ function _buildCommunityMarker(doc) {
       html: `<div class="depth-marker community-site-marker${ovr ? " pos-adjusted" : ""}" style="--mk:${color}">
                <span class="mk-glyph">${glyph}</span>
              </div>`,
-      iconSize: [26, 26], iconAnchor: [13, 13]
+      iconSize: [22, 22], iconAnchor: [11, 11]
     })
   });
 
@@ -2160,6 +2179,10 @@ function _onCommunitySnapshot(docs, meta) {
     if (!valid.find((d) => d.id === id)) {
       if (_communityLayer) _communityLayer.removeLayer(m);
       _communityMarkers.delete(id);
+      if (_spearCircles.has(id)) {
+        if (_spearLayer) _spearLayer.removeLayer(_spearCircles.get(id));
+        _spearCircles.delete(id);
+      }
       if (_openCommunityDocId === id) {
         closeDrawer();
         _openCommunityDocId = null;
@@ -2169,7 +2192,18 @@ function _onCommunitySnapshot(docs, meta) {
 
   // Add markers for new docs
   valid.forEach((doc) => {
-    if (!_communityMarkers.has(doc.id)) _buildCommunityMarker(doc);
+    if (!_communityMarkers.has(doc.id)) {
+      _buildCommunityMarker(doc);
+      // Add a spear circle for new community water/beach sites (into layer group, shown when toggle is on)
+      if (_spearLayer) {
+        const cls = _classifyCommunityDoc(doc);
+        if (cls) {
+          const ovr = _posOverrides.get(doc.id);
+          const circle = _makeSpearCircle(ovr?.lat ?? doc.lat, ovr?.lng ?? doc.lng, cls).addTo(_spearLayer);
+          _spearCircles.set(doc.id, circle);
+        }
+      }
+    }
   });
 
   // Pending-write toast (user just wrote while offline)
@@ -2200,21 +2234,33 @@ function _applyOverrideToMarker(ovr) {
   if (!m) return;
   m.setLatLng([ovr.lat, ovr.lng]);
   const site = SITES.find((s) => s.id === ovr.id);
-  if (site) { m.setIcon(depthIcon(site, false, true)); return; }
-  const poi = POIS.find((p) => p.id === ovr.id);
-  if (poi) { m.setIcon(poiIcon(poi, true)); }
-  // community markers: position updated; icon class is in markup, won't auto-update after build
+  if (site) { m.setIcon(depthIcon(site, false, true)); }
+  else {
+    const poi = POIS.find((p) => p.id === ovr.id);
+    if (poi) m.setIcon(poiIcon(poi, true));
+    // community markers: position updated; icon class is in markup, won't auto-update after build
+  }
+  _spearCircles.get(ovr.id)?.setLatLng([ovr.lat, ovr.lng]);
 }
 
 function _restoreMarkerToOriginal(id) {
   const m = markerById[id] || poiMarkerById[id] || _communityMarkers.get(id);
   if (!m) return;
   const site = SITES.find((s) => s.id === id);
-  if (site) { m.setLatLng([site.lat, site.lng]); m.setIcon(depthIcon(site, false, false)); return; }
+  if (site) {
+    m.setLatLng([site.lat, site.lng]); m.setIcon(depthIcon(site, false, false));
+    _spearCircles.get(id)?.setLatLng([site.lat, site.lng]); return;
+  }
   const poi = POIS.find((p) => p.id === id);
-  if (poi) { m.setLatLng([poi.lat, poi.lng]); m.setIcon(poiIcon(poi, false)); return; }
+  if (poi) {
+    m.setLatLng([poi.lat, poi.lng]); m.setIcon(poiIcon(poi, false));
+    _spearCircles.get(id)?.setLatLng([poi.lat, poi.lng]); return;
+  }
   const cdoc = _communityDocs.find((d) => d.id === id);
-  if (cdoc) m.setLatLng([cdoc.lat, cdoc.lng]);
+  if (cdoc) {
+    m.setLatLng([cdoc.lat, cdoc.lng]);
+    _spearCircles.get(id)?.setLatLng([cdoc.lat, cdoc.lng]);
+  }
 }
 
 function _onOverridesSnapshot(docs, meta) {
@@ -2412,8 +2458,9 @@ function _runNearby() {
 // ---- Spearfishing legality layer --------------------------------
 // ================================================================
 
-let _spearMap   = null;   // Map<siteId, {status, radius, reason}>
-let _spearLayer = null;   // L.layerGroup, built lazily on first enable
+let _spearMap     = null;   // Map<siteId, {status, radius, reason}>
+let _spearLayer   = null;   // L.layerGroup, built lazily on first enable
+let _spearCircles = new Map(); // id → L.circle, for live position updates
 let _spearToastShown = false;
 
 const _SPEAR_STATUS = {
@@ -2453,27 +2500,45 @@ function _buildSpearClassification() {
   return result;
 }
 
+function _classifyCommunityDoc(doc) {
+  if (doc.type === "beach") {
+    return { status: "restricted", radius: SPEAR_RULES.beachRadius,
+      reason: "Illegal within 500 m of bathing beaches (Italian maritime law)" };
+  }
+  if (FEATURE_TYPES[doc.type]) {
+    return { status: "verify", radius: 300,
+      reason: "Generally permitted under national rules — daylight only, no scuba, ≥500 m from bathers, ≥100 m from moored vessels and fishing gear. Local ordinances vary: verify before loading a speargun." };
+  }
+  return null;
+}
+
+function _makeSpearCircle(lat, lng, cls) {
+  const st = _SPEAR_STATUS[cls.status];
+  return L.circle([lat, lng], {
+    radius: cls.radius, pane: "spearfishPane", interactive: false,
+    color: st.color, weight: st.weight, dashArray: st.dashArray,
+    fillColor: st.color, fillOpacity: st.fillOpacity, opacity: 0.7
+  });
+}
+
 function buildSpearfishingLayer() {
   if (_spearLayer) { _spearLayer.clearLayers(); } else { _spearLayer = L.layerGroup(); }
+  _spearCircles.clear();
 
   _spearMap.forEach((cls, id) => {
     const src = SITES.find((s) => s.id === id) || POIS.find((p) => p.id === id);
     if (!src) return;
     const ovr = _posOverrides.get(id);
-    const lat = ovr?.lat ?? src.lat;
-    const lng = ovr?.lng ?? src.lng;
-    const st  = _SPEAR_STATUS[cls.status];
-    L.circle([lat, lng], {
-      radius:      cls.radius,
-      pane:        "spearfishPane",
-      interactive: false,
-      color:       st.color,
-      weight:      st.weight,
-      dashArray:   st.dashArray,
-      fillColor:   st.color,
-      fillOpacity: st.fillOpacity,
-      opacity:     0.7
-    }).addTo(_spearLayer);
+    const circle = _makeSpearCircle(ovr?.lat ?? src.lat, ovr?.lng ?? src.lng, cls).addTo(_spearLayer);
+    _spearCircles.set(id, circle);
+  });
+
+  _communityDocs.forEach((doc) => {
+    const cls = _classifyCommunityDoc(doc);
+    if (!cls) return;
+    const ovr = _posOverrides.get(doc.id);
+    const circle = _makeSpearCircle(ovr?.lat ?? doc.lat, ovr?.lng ?? doc.lng, cls).addTo(_spearLayer);
+    _spearCircles.set(doc.id, circle);
   });
 }
 
@@ -2598,7 +2663,6 @@ function init() {
       if (_playTimer) { clearInterval(_playTimer); _playTimer = null; document.getElementById("wxt-play").textContent = "▶"; }
     }
   });
-  document.getElementById("wx-refresh").addEventListener("click", loadWeather);
   loadWeather();
   setInterval(loadWeather, 10 * 60 * 1000);
 

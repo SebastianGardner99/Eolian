@@ -179,14 +179,14 @@ body {
 
 /* Leaflet marker (feature glyph on depth-colored disc) */
 .depth-marker {
-  width: 26px; height: 26px; border-radius: 50%;
+  width: 22px; height: 22px; border-radius: 50%;
   background: var(--mk); border: 2.5px solid rgba(255,255,255,.9);
   box-shadow: 0 0 0 2px rgba(0,0,0,.4), 0 4px 10px -2px rgba(0,0,0,.6);
   display: flex; align-items: center; justify-content: center;
   transition: transform .15s;
 }
 .depth-marker .mk-glyph {
-  font-size: 14px; line-height: 1; color: #06231f; font-weight: 700;
+  font-size: 12px; line-height: 1; color: #06231f; font-weight: 700;
   text-shadow: 0 1px 1px rgba(255,255,255,.35);
 }
 .depth-marker:hover { transform: scale(1.2); z-index: 5; }
@@ -213,7 +213,7 @@ body {
 
 /* POI markers */
 .poi-marker {
-  width: 28px; height: 28px; border-radius: 50%;
+  width: 22px; height: 22px; border-radius: 50%;
   background: var(--pt);
   display: flex; align-items: center; justify-content: center;
   font-size: 13px; font-weight: 700; color: #fff;
@@ -380,12 +380,12 @@ body {
 /* ================================================================
    Weather panel
    ================================================================ */
-.wx-refresh-btn {
-  background: none; border: none; color: var(--ink-mute); font-size: 1rem;
-  cursor: pointer; padding: 0 0 0 6px; line-height: 1; transition: color .15s;
-  font-family: inherit;
+.wx-title-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
 }
-.wx-refresh-btn:hover { color: var(--shallow); }
+.wx-title-row .panel-title { margin: 0; }
+.wx-anim-label { margin: 0 !important; font-size: .75rem; }
+.wx-anim-label span { font-size: .75rem; }
 
 .wx-body { margin-top: 10px; }
 .wx-loading, .wx-error {
@@ -985,6 +985,18 @@ select.ash-input { cursor: pointer; }
 .chip-more:hover { opacity: 1; }
 .chip-more.chip-expanded { opacity: 1; }
 
+.sel-all-row {
+  display: flex; gap: 6px; margin-top: 4px; width: 100%;
+}
+.sel-btn {
+  flex: 1; padding: 5px 0; border-radius: var(--r-sm);
+  border: 1px solid var(--border, #3a3a3c); background: transparent;
+  color: var(--ink-mute); font-size: .75rem; font-weight: 500;
+  cursor: pointer; transition: background .12s, color .12s;
+  font-family: inherit;
+}
+.sel-btn:hover { background: rgba(255,255,255,.08); color: var(--ink); }
+
 /* ---- CHANGE 1: community site delete section ---- */
 .d-delete-section {
   margin: 20px 0 4px;
@@ -1536,17 +1548,17 @@ body {
 /* spear circles also hidden */
 .zoom-far .leaflet-spearfishPane-pane { display: none; }
 
-/* ---- zoom-mid (10 ≤ z < 12): scale markers to 60%, labels visible ---- */
+/* ---- zoom-mid (10 ≤ z < 12): scale markers to 45%, labels visible ---- */
 .zoom-mid .depth-marker,
 .zoom-mid .poi-marker,
 .zoom-mid .anchor-icon {
-  transform: scale(0.6);
+  transform: scale(0.45);
   transform-origin: center bottom;
   transition: transform 150ms ease;
 }
 /* hover at mid zoom — slightly larger but still scaled */
-.zoom-mid .depth-marker:hover { transform: scale(0.75); transform-origin: center bottom; }
-.zoom-mid .poi-marker:hover   { transform: scale(0.75); transform-origin: center bottom; }
+.zoom-mid .depth-marker:hover { transform: scale(0.58); transform-origin: center bottom; }
+.zoom-mid .poi-marker:hover   { transform: scale(0.58); transform-origin: center bottom; }
 
 /* ---- zoom-near (z ≥ 12): full-size markers, labels hidden ---- */
 .zoom-near .leaflet-labelPane-pane { display: none; }

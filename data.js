@@ -505,24 +505,6 @@ const ANCHORAGES = [
 const PROXIMITY = { swim: 400, tender: 1500 };
 
 // ===================================================================
-// Spearfishing legality data (Italian maritime law).
-// Classification order: bannedZones > beach > portIds > verify.
-// NEVER assert a green/allowed state — flag prohibitions confidently,
-// permissions cautiously.
-// ===================================================================
-const SPEAR_RULES = {
-  bannedZones: [
-    { id: "capo-graziano",    reason: "Capo Graziano archaeological protection zone — diving/fishing strictly prohibited, heavy fines", radius: 600 },
-    { id: "wreck-capistello", reason: "Capistello archaeological zone — authorised diving only, no fishing", radius: 500 },
-    { id: "la-canna",         reason: "La Canna protected nature reserve — fishing prohibited", radius: 400 },
-    { id: "strombolicchio",   reason: "Strombolicchio integral nature reserve — fishing prohibited", radius: 400 }
-  ],
-  beachRadius: 500,
-  portIds: ["alicudi-harbour", "spiaggia-pecorini"],
-  portRadius: 500
-};
-
-// ===================================================================
 // Travel-tip POIs — restaurants, bars, beaches, attractions, island
 // overviews, dive sites (scuba), wrecks and jumps. Compiled from
 // Adventurous Kate, Lonely Planet, Silvia's Trips, Michelin, PADI

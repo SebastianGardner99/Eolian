@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>Aeolian Islands — Aeolian Guide</title>
-  <meta name="description" content="Aeolian Guide — Catching Lobsters." />
+  <title>Spearing Dinner</title>
+  <meta name="description" content="Spearing Dinner — diciassette granite, per favore" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -25,8 +25,8 @@
           <img id="brand-icon" class="brand-mark" alt="" aria-hidden="true">
           <script>(function(){var i=['img/lobster-blue.jpg','img/lobster-rock.jpg','img/lobster-meme.jpg'];document.getElementById('brand-icon').src=i[Math.floor(Math.random()*3)];})();</script>
           <div class="brand-text">
-            <h1>Aeolian Guide</h1>
-            <p>Catching Lobsters</p>
+            <h1>Spearing Dinner</h1>
+            <p>diciassette granite, per favore</p>
           </div>
         </div>
         <button id="sb-toggle" class="sb-toggle" aria-label="Collapse sidebar" title="Collapse">‹</button>
@@ -35,13 +35,15 @@
       <div class="sb-scroll">
         <!-- Wind & Sea — first so live conditions are immediately visible -->
         <section class="panel" id="wx-panel">
-          <h2 class="panel-title">Wind &amp; sea <button id="wx-refresh" class="wx-refresh-btn" title="Refresh">↻</button></h2>
+          <div class="wx-title-row">
+            <h2 class="panel-title">Wind &amp; sea</h2>
+            <label class="check wx-anim-label" id="wx-overlay-label" style="display:none">
+              <input type="checkbox" id="tog-wind-overlay" /> <span>Animate wind</span>
+            </label>
+          </div>
           <div id="wx-body" class="wx-body">
             <div class="wx-loading" id="wx-loading">Fetching conditions…</div>
           </div>
-          <label class="check" id="wx-overlay-label" style="margin-top:10px;display:none">
-            <input type="checkbox" id="tog-wind-overlay" /> <span>Animate wind on map</span>
-          </label>
           <div class="precache-row" id="precache-row">
             <button id="precache-btn" class="precache-btn" type="button">⬇ Download maps for offline</button>
             <div id="precache-progress" class="precache-progress" hidden>
@@ -91,10 +93,6 @@
           <ul id="search-results" class="search-results" hidden></ul>
         </section>
 
-        <footer class="sb-footer">
-          <p>Every water site is <strong>≤20 m</strong> and snorkelable — no scuba needed. Some non-water sites (restaurants, bars, landmarks) are included as general travel tips. Always check sea conditions before swimming.</p>
-          <p class="src">Data: Aeolian Guide — compiled from first-hand experience.</p>
-        </footer>
       </div>
     </aside>
 
