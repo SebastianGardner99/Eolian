@@ -1102,12 +1102,12 @@ function _basinForSite(site) {
 function siteSeaState(site, basin) {
   if (!basin || basin.wave_height == null) {
     return { level: "unknown", label: "Sea state unavailable — check conditions visually",
-             factorW: null, factorS: null, effective: null };
+             factorW: null, factorS: null, effective: null, driveDir: null };
   }
   const profile = _exposureCache.get(site.id);
   if (!profile) {
     return { level: "unknown", label: "Exposure data unavailable",
-             factorW: null, factorS: null, effective: null };
+             factorW: null, factorS: null, effective: null, driveDir: null };
   }
 
   const binW    = _bearingBin(basin.wave_direction);
@@ -1120,6 +1120,9 @@ function siteSeaState(site, basin) {
   const effectiveS = (basin.swell_wave_height ?? 0) * factorS;
   const effective  = Math.max(effectiveW, effectiveS);
   const domFactor  = effectiveW >= effectiveS ? factorW : factorS;
+  const driveDir   = effectiveW >= effectiveS
+                   ? (basin.wave_direction       ?? null)
+                   : (basin.swell_wave_direction ?? null);
 
   const level      = effective <= 0.3 ? "calm" : effective <= 0.7 ? "moderate" : "rough";
   const exposure   = domFactor >= 0.85 ? "fully exposed"
@@ -1130,44 +1133,77 @@ function siteSeaState(site, basin) {
   const wStr  = basin.wave_height.toFixed(1) + " m";
   const eStr  = effective.toFixed(1);
   const label = `Regional waves ${wStr} from ${degToCompass(basin.wave_direction)} · ${site.name} is ${exposure} from that direction — ${expect} (~${eStr} m)`;
-  return { level, label, factorW, factorS, effective, domFactor };
+  return { level, label, factorW, factorS, effective, domFactor, driveDir };
 }
 
 // ================================================================
 // ---- PART D (helpers) — Exposure rose + drawer row ------------
 // ================================================================
 
-function _exposureRoseSvg(profile, waveDir, swellDir) {
-  const R = 28, cx = 32, cy = 32;
-  const toAng = (deg) => (deg - 90) * Math.PI / 180;
-  const pts = [];
-  for (let i = 0; i < 72; i++) {
-    const a = toAng(i * 5);
-    const r = profile[i] * R;
-    pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+// _exposureRoseSvg — 16-segment donut ring.
+// profile: Float32Array(72), driveDir: bearing in degrees (wave source), level: string
+// Segment colour: < 0.4 teal (sheltered), 0.4–0.85 mid-blue (partial), ≥ 0.85 amber (exposed).
+// Centre chevron tip touches inner ring at driveDir, coloured to match verdict dot.
+// level='unknown' → no chevron, whole ring at 40% opacity.
+function _exposureRoseSvg(profile, driveDir, level) {
+  const cx = 44, cy = 44, rO = 40, rI = 26;
+  // Gap of 1.5 px between segments at mid-radius
+  const halfGapDeg = (180 / Math.PI) * Math.asin(0.75 / ((rO + rI) / 2));
+
+  function ptB(r, bearingDeg) {
+    const a = bearingDeg * Math.PI / 180;
+    return [cx + r * Math.sin(a), cy - r * Math.cos(a)];
   }
-  const pathD = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join("") + "Z";
-  const ticks = ["N", "E", "S", "W"].map((lbl, i) => {
-    const a = toAng(i * 90);
-    return `<line x1="${(cx + R * Math.cos(a)).toFixed(1)}" y1="${(cy + R * Math.sin(a)).toFixed(1)}"
-      x2="${(cx + (R - 4) * Math.cos(a)).toFixed(1)}" y2="${(cy + (R - 4) * Math.sin(a)).toFixed(1)}"
-      stroke="rgba(36,66,87,.7)" stroke-width="1.2"/>`;
-  }).join("");
-  function arrow(deg, color) {
-    if (deg == null) return "";
-    const a  = toAng(deg);
-    const x2 = (cx + R * Math.cos(a)).toFixed(1);
-    const y2 = (cy + R * Math.sin(a)).toFixed(1);
-    return `<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="2" stroke-linecap="round" opacity=".85"/>
-    <circle cx="${x2}" cy="${y2}" r="2.5" fill="${color}" opacity=".85"/>`;
+
+  // Quantise 72 bins → 16 segments: max factor within each 22.5° sector
+  const segs = new Float32Array(16).fill(0);
+  for (let s = 0; s < 16; s++) {
+    const sc = s * 22.5;
+    for (let k = 0; k < 72; k++) {
+      let diff = ((k * 5 - sc) % 360 + 360) % 360;
+      if (diff > 180) diff = 360 - diff;
+      if (diff < 11.25 && profile[k] > segs[s]) segs[s] = profile[k];
+    }
   }
-  return `<svg width="64" height="64" viewBox="0 0 64 64" style="flex-shrink:0">
-    <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="rgba(36,66,87,.4)" stroke-width="1"/>
-    <circle cx="${cx}" cy="${cy}" r="${R * 0.5}" fill="none" stroke="rgba(36,66,87,.2)" stroke-width=".5" stroke-dasharray="2,2"/>
-    ${ticks}
-    <path d="${pathD}" fill="rgba(94,224,198,.2)" stroke="rgba(94,224,198,.5)" stroke-width="1"/>
-    ${arrow(waveDir, "#6fa8ff")}${arrow(swellDir, "#7c8cf0")}
-  </svg>`;
+
+  function segFill(f) {
+    if (f < 0.40) return '#5ee0c6';  // sheltered
+    if (f < 0.85) return '#3a4a63';  // partial
+    return '#f0b34e';                 // exposed
+  }
+
+  let arcs = '';
+  for (let s = 0; s < 16; s++) {
+    const sc = s * 22.5;
+    const sB = sc - 11.25 + halfGapDeg;
+    const eB = sc + 11.25 - halfGapDeg;
+    const [ox1, oy1] = ptB(rO, sB);
+    const [ox2, oy2] = ptB(rO, eB);
+    const [ix1, iy1] = ptB(rI, sB);
+    const [ix2, iy2] = ptB(rI, eB);
+    arcs += `<path d="M${ox1.toFixed(2)},${oy1.toFixed(2)} A${rO},${rO} 0 0,1 ${ox2.toFixed(2)},${oy2.toFixed(2)} L${ix2.toFixed(2)},${iy2.toFixed(2)} A${rI},${rI} 0 0,0 ${ix1.toFixed(2)},${iy1.toFixed(2)} Z" fill="${segFill(segs[s])}"/>`;
+  }
+
+  // N E S W labels outside ring
+  const labelR = rO + 7;
+  const labels = [['N', 0], ['E', 90], ['S', 180], ['W', 270]].map(([lbl, b]) => {
+    const [x, y] = ptB(labelR, b);
+    return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="rgba(36,66,87,.45)">${lbl}</text>`;
+  }).join('');
+
+  // Chevron: tip kisses inner ring at wave source bearing; wings near centre
+  const dotColors = { calm: '#5ee0c6', moderate: '#ffd76a', rough: '#e07046' };
+  const arrowColor = dotColors[level] ?? null;
+  let chevron = '';
+  if (driveDir != null && arrowColor) {
+    const [tx, ty] = ptB(rI - 1, driveDir);
+    const [lx, ly] = ptB(9, driveDir + 30);
+    const [rx, ry] = ptB(9, driveDir - 30);
+    chevron = `<polygon points="${tx.toFixed(1)},${ty.toFixed(1)} ${lx.toFixed(1)},${ly.toFixed(1)} ${rx.toFixed(1)},${ry.toFixed(1)}" fill="${arrowColor}" opacity=".92"/>`;
+  }
+
+  const dim = level === 'unknown' ? ' opacity=".4"' : '';
+  return `<svg width="88" height="88" viewBox="0 0 88 88" overflow="visible" style="flex-shrink:0"${dim}>${arcs}${labels}${chevron}</svg>`;
 }
 
 function _renderSiteSeaStateRow(site) {
@@ -1180,7 +1216,7 @@ function _renderSiteSeaStateRow(site) {
   }
   const ss      = siteSeaState(site, basin);
   const profile = _exposureCache.get(site.id);
-  const roseSvg = profile ? _exposureRoseSvg(profile, basin.wave_direction ?? null, basin.swell_wave_direction ?? null) : "";
+  const roseSvg = profile ? _exposureRoseSvg(profile, ss.driveDir ?? null, ss.level) : "";
   rowEl.innerHTML = `
     <div class="d-sea-state">
       <span class="sea-dot sea-dot-${ss.level}"></span>
@@ -1440,6 +1476,7 @@ let   _userSites         = [];
 let   _addSitePlacing    = false;
 let   _addSitePlaceClean = null;        // cleanup fn for placement mode
 let   _onUserSitesChanged = null;       // hook called after each save
+let   _refreshExportBtn  = null;        // assigned in initAddSite, also called by community sync
 
 function loadUserSites() {
   try { _userSites = JSON.parse(localStorage.getItem(_USER_SITES_KEY) || "[]"); }
@@ -1594,26 +1631,27 @@ function _enterPlacementMode(siteData) {
 
   function onMapClick(e) {
     if (!_addSitePlacing) return;
+
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
+
+    // Reject pins clearly outside the archipelago
+    if (lat < 38.2 || lat > 38.95 || lng < 14.2 || lng > 15.4) {
+      _toast("Pin is outside the Aeolian archipelago — tap closer to the islands");
+      return; // stay in placement mode so user can correct
+    }
+
     _addSitePlacing = false;
     _addSitePlaceClean = null;
     document.getElementById("map").classList.remove("add-site-mode");
     banner.remove();
 
-    const site = {
-      ...siteData,
-      id:  "user-" + Date.now(),
-      lat: e.latlng.lat,
-      lng: e.latlng.lng
-    };
-
-    _userSites.push(site);
-    _saveUserSites();
-    _buildUserSiteMarker(site);
-
-    setTimeout(() => {
-      const m = _userSiteMarkers.get(site.id);
-      if (m) m.openPopup();
-    }, 120);
+    const author = localStorage.getItem("atlas_author") || "Anonymous";
+    window.AtlasSync.addSite({ ...siteData, author, lat, lng })
+      .then(({ pending }) => {
+        if (pending) _toast("Saved — will sync when back online");
+      })
+      .catch((err) => _toast("Error saving site: " + err.message));
   }
 
   map.once("click", onMapClick);
@@ -1683,30 +1721,346 @@ function initAddSite() {
     document.getElementById("ash-other-field").hidden   = true;
     document.getElementById("ash-depth-field").hidden   = false;
 
-    _enterPlacementMode(siteData);
+    // Require Firebase before proceeding
+    if (!_firebaseReady) {
+      _toast("Shared sites unavailable — check connection or configuration");
+      return;
+    }
+
+    // Get or prompt for author identity, then enter placement mode
+    const author = localStorage.getItem("atlas_author");
+    if (!author) {
+      _showAuthorModal(() => _enterPlacementMode(siteData));
+    } else {
+      _enterPlacementMode(siteData);
+    }
   });
 
-  // Export button — shown beneath "Add a site" when user has pinned sites saved
-  function _refreshExportBtn() {
+  document.getElementById("ash-change-author").addEventListener("click", () => {
+    _showAuthorModal(null);
+  });
+
+  // Export button — community sites from Firestore (repurposed from local export)
+  _refreshExportBtn = function() {
     const existing = document.getElementById("user-sites-export-btn");
-    if (_userSites.length > 0 && !existing) {
+    const count    = _communityDocs.length;
+    if (count > 0 && !existing) {
       const btn = document.createElement("button");
-      btn.id = "user-sites-export-btn";
+      btn.id        = "user-sites-export-btn";
       btn.className = "add-site-sb-toggle";
       btn.style.cssText = "margin-top:4px;border-color:rgba(99,179,237,.4);color:#2b6cb0;";
-      btn.textContent = "↓ Export my sites as JS";
-      btn.title = "Download user-added sites as a JS snippet to paste into data.js";
-      btn.addEventListener("click", exportUserSites);
+      btn.title = "Download community-added sites formatted for paste into data.js";
+      btn.addEventListener("click", exportCommunitySites);
       document.getElementById("add-site-sb-btn").insertAdjacentElement("afterend", btn);
-    } else if (_userSites.length === 0 && existing) {
-      existing.remove();
     }
-  }
+    if (existing || count > 0) {
+      const el = document.getElementById("user-sites-export-btn");
+      if (el) el.textContent = `↓ Export ${count} community site${count === 1 ? "" : "s"} as JS`;
+    }
+    const el = document.getElementById("user-sites-export-btn");
+    if (el && count === 0) el.remove();
+  };
 
   _onUserSitesChanged = _refreshExportBtn;
-  _refreshExportBtn();
+  _updateAddSiteHudFirebaseState();
 }
 
+// ================================================================
+// ---- Community sites (Firestore) --------------------------------
+// ================================================================
+
+let _communityLayer   = null;              // L.layerGroup, created in _initFirebaseSync
+const _communityMarkers = new Map();       // docId → Leaflet marker
+let   _communityDocs    = [];              // latest snapshot, used for export
+const _seenCommunityIds = new Set();       // tracks known doc IDs for new-pin toasts
+let   _firebaseReady    = false;
+
+// ---- Toast ----
+function _toast(msg, duration) {
+  const ms = duration ?? 3500;
+  const el = document.createElement("div");
+  el.className  = "atlas-toast";
+  el.textContent = msg;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add("atlas-toast--show"));
+  setTimeout(() => {
+    el.classList.remove("atlas-toast--show");
+    el.addEventListener("transitionend", () => el.remove(), { once: true });
+  }, ms);
+}
+
+// ---- Relative time ----
+function _relTime(ts) {
+  if (!ts) return "—";
+  const ms   = ts.toMillis ? ts.toMillis() : (typeof ts === "number" ? ts : Date.now());
+  const secs = Math.round((Date.now() - ms) / 1000);
+  if (secs < 90)     return "just now";
+  if (secs < 3600)   return Math.floor(secs / 60)   + " min ago";
+  if (secs < 86400)  return Math.floor(secs / 3600)  + " hr ago";
+  return Math.floor(secs / 86400) + " d ago";
+}
+
+// ---- Add-site HUD Firebase state ----
+function _updateAddSiteHudFirebaseState() {
+  const authorRow  = document.getElementById("ash-author-row");
+  const fbNote     = document.getElementById("ash-firebase-note");
+  const placeBtn   = document.getElementById("ash-place-btn");
+  if (!_firebaseReady) {
+    if (authorRow) authorRow.hidden = true;
+    if (fbNote)    fbNote.hidden    = false;
+    if (placeBtn) { placeBtn.disabled = true; placeBtn.title = "Shared sites unavailable — check connection or config"; }
+  } else {
+    if (fbNote) fbNote.hidden = true;
+    if (placeBtn) { placeBtn.disabled = false; placeBtn.title = ""; }
+    const name = localStorage.getItem("atlas_author");
+    if (authorRow) authorRow.hidden = !name;
+    const nameEl = document.getElementById("ash-author-name");
+    if (nameEl && name) nameEl.textContent = name;
+  }
+}
+
+// ---- Author modal ----
+function _showAuthorModal(onSave) {
+  const modal     = document.getElementById("author-modal");
+  const scrim     = document.getElementById("author-scrim");
+  const input     = document.getElementById("author-name-input");
+  const saveBtn   = document.getElementById("author-save-btn");
+  const cancelBtn = document.getElementById("author-cancel-btn");
+  if (!modal) return;
+
+  const existing = localStorage.getItem("atlas_author");
+  if (existing) input.value = existing;
+
+  modal.hidden = false;
+  scrim.hidden = false;
+  setTimeout(() => input.focus(), 60);
+
+  function cleanup() {
+    modal.hidden = true;
+    scrim.hidden = true;
+    saveBtn.removeEventListener("click",   onSaveClick);
+    cancelBtn.removeEventListener("click", onCancelClick);
+  }
+
+  function onSaveClick() {
+    const name = input.value.trim();
+    if (!name) {
+      input.style.borderColor = "rgba(239,68,68,.6)";
+      input.addEventListener("input", () => { input.style.borderColor = ""; }, { once: true });
+      return;
+    }
+    localStorage.setItem("atlas_author", name);
+    cleanup();
+    _updateAddSiteHudFirebaseState();
+    if (onSave) onSave();
+  }
+
+  function onCancelClick() { cleanup(); }
+
+  saveBtn.addEventListener("click",   onSaveClick);
+  cancelBtn.addEventListener("click", onCancelClick);
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") onSaveClick(); }, { once: true });
+}
+
+// ---- Community marker ----
+function _buildCommunityMarker(doc) {
+  const { glyph, color } = _userSiteIconInfo(doc);
+  const m = L.marker([doc.lat, doc.lng], {
+    icon: L.divIcon({
+      className: "",
+      html: `<div class="depth-marker community-site-marker" style="--mk:${color}">
+               <span class="mk-glyph">${glyph}</span>
+             </div>`,
+      iconSize: [26, 26], iconAnchor: [13, 13]
+    })
+  });
+
+  m.bindPopup(() => {
+    const div = document.createElement("div");
+    div.className = "pop";
+    const displayType = doc.otherType
+      || (POI_TYPES[doc.type]    ? POI_TYPES[doc.type].label    : null)
+      || (FEATURE_TYPES[doc.type] ? FEATURE_TYPES[doc.type].label : null)
+      || doc.type || "site";
+    const timeStr = _relTime(doc.createdAt);
+    div.innerHTML = `
+      <h3>${doc.name}</h3>
+      <div class="pop-sub">${doc.island || "Aeolian Islands"} · <em>${displayType} — community</em></div>
+      ${doc.notes ? `<p class="pop-poi-notes">${doc.notes}</p>` : ""}
+      <div class="pop-community-meta">Added by <strong>${doc.author}</strong> · ${timeStr}</div>
+      <button class="pop-btn" data-open-community>Full details →</button>`;
+    div.querySelector("[data-open-community]").addEventListener("click", () => {
+      m.closePopup();
+      openCommunityDrawer(doc.id);
+    });
+    return div;
+  });
+
+  if (_communityLayer) m.addTo(_communityLayer);
+  _communityMarkers.set(doc.id, m);
+}
+
+// ---- Community detail drawer ----
+function openCommunityDrawer(id) {
+  const doc = _communityDocs.find((d) => d.id === id);
+  if (!doc) return;
+  const ft          = FEATURE_TYPES[doc.type] || POI_TYPES[doc.type];
+  const displayType = doc.otherType || (ft ? ft.label : doc.type || "Site");
+  const timeStr     = _relTime(doc.createdAt);
+  const dateStr     = doc.createdAt?.toDate
+    ? doc.createdAt.toDate().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+    : "";
+
+  const body = `
+    <div class="d-hero">
+      <div class="d-chips">
+        ${ft ? `<span class="d-chip access-shore">${ft.glyph} ${displayType}</span>` : ""}
+        <span class="d-chip access-shore" style="background:rgba(99,179,237,.15);color:#2b6cb0">Community</span>
+      </div>
+      <h2 class="d-title">${doc.name}</h2>
+      <div class="d-sub">${doc.island || "Aeolian Islands"}</div>
+    </div>
+    <div class="d-section-h">Added by</div>
+    <div class="d-sea-state" style="margin-bottom:12px">
+      <span style="font-size:.82rem">
+        <strong>${doc.author}</strong> · ${timeStr}${dateStr ? " · " + dateStr : ""}
+      </span>
+    </div>
+    <div class="d-section-h">Details</div>
+    <table class="d-table">
+      <tr><th>Type</th><td>${displayType}</td></tr>
+      ${doc.depth != null ? `<tr><th>Depth</th><td>~${doc.depth} m</td></tr>` : ""}
+      ${doc.access ? `<tr><th>Access</th><td>${ACCESS_LABEL[doc.access] || doc.access}</td></tr>` : ""}
+      ${doc.notes  ? `<tr><th>Notes</th><td>${doc.notes}</td></tr>` : ""}
+      <tr><th>Coordinates</th><td>${doc.lat.toFixed(4)}°N, ${doc.lng.toFixed(4)}°E
+        <div class="approx-flag">Community-added — verify before visiting</div></td></tr>
+    </table>`;
+
+  document.getElementById("drawer-body").innerHTML = body;
+  const drawer = document.getElementById("drawer");
+  drawer.classList.add("open");
+  drawer.removeAttribute("aria-hidden");
+  document.getElementById("drawer-scrim").hidden = false;
+}
+window.openCommunityDrawer = openCommunityDrawer;
+
+// ---- Export community sites formatted for data.js ----
+function _formatCommunitySiteAsCode(doc) {
+  const isWater = !!FEATURE_TYPES[doc.type];
+  const typeVal = doc.type === "other" ? (doc.otherType || "attraction") : doc.type;
+  const dateStr = doc.createdAt?.toDate
+    ? doc.createdAt.toDate().toLocaleDateString("en-GB")
+    : "unknown date";
+  const source  = `Community — ${doc.author}, ${dateStr}`;
+  const ind     = "  ";
+  if (isWater) {
+    return `${ind}{ id: "community-${doc.id}", name: ${JSON.stringify(doc.name)}, island: ${JSON.stringify(doc.island || "Aeolian Islands")},\n` +
+      `${ind}  lat: ${doc.lat.toFixed(6)}, lng: ${doc.lng.toFixed(6)}, approx: true,\n` +
+      `${ind}  type: ${JSON.stringify(typeVal)}, depth: ${doc.depth || 5}, depthText: "— community-added",\n` +
+      `${ind}  access: ${JSON.stringify(doc.access || "shore")}, anchorage: "",\n` +
+      `${ind}  see: "", notes: ${JSON.stringify(doc.notes || "")},\n` +
+      `${ind}  desc: ${JSON.stringify(doc.notes || doc.name)},\n` +
+      `${ind}  sources: [[${JSON.stringify(source)}, ""]] },`;
+  }
+  return `${ind}{ id: "community-${doc.id}", name: ${JSON.stringify(doc.name)}, island: ${JSON.stringify(doc.island || "Aeolian Islands")},\n` +
+    `${ind}  lat: ${doc.lat.toFixed(6)}, lng: ${doc.lng.toFixed(6)}, type: ${JSON.stringify(typeVal)},\n` +
+    `${ind}  notes: ${JSON.stringify(doc.notes || "")}, source: ${JSON.stringify(source)} },`;
+}
+
+function exportCommunitySites() {
+  if (!_communityDocs.length) return;
+  const water = _communityDocs.filter((d) => FEATURE_TYPES[d.type]);
+  const pois  = _communityDocs.filter((d) => !FEATURE_TYPES[d.type]);
+  let out = "// ---- Community-added sites — paste into data.js ----\n";
+  out += "// Firestore doc IDs (for adoption tracking / future moderation):\n";
+  out += _communityDocs.map((d) => `//   ${d.id}  "${d.name}" — ${d.author}`).join("\n") + "\n\n";
+  if (water.length) {
+    out += "// Add to the SITES array:\n";
+    out += water.map(_formatCommunitySiteAsCode).join("\n") + "\n\n";
+  }
+  if (pois.length) {
+    out += "// Add to the POIS array:\n";
+    out += pois.map(_formatCommunitySiteAsCode).join("\n") + "\n";
+  }
+  const blob = new Blob([out], { type: "text/javascript" });
+  const a    = document.createElement("a");
+  a.href     = URL.createObjectURL(blob);
+  a.download = "community-sites.js";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ---- Snapshot handler ----
+function _onCommunitySnapshot(docs, meta) {
+  // Defensive read: skip docs missing essential fields
+  const valid = docs.filter((d) =>
+    d.name && typeof d.lat === "number" && typeof d.lng === "number"
+  );
+  _communityDocs = valid;
+
+  // Update count badge
+  const badge = document.getElementById("community-count");
+  if (badge) badge.textContent = valid.length;
+
+  // Remove markers for deleted docs (shouldn't happen with immutable rules, but defensive)
+  _communityMarkers.forEach((m, id) => {
+    if (!valid.find((d) => d.id === id)) {
+      if (_communityLayer) _communityLayer.removeLayer(m);
+      _communityMarkers.delete(id);
+    }
+  });
+
+  // Add markers for new docs
+  valid.forEach((doc) => {
+    if (!_communityMarkers.has(doc.id)) _buildCommunityMarker(doc);
+  });
+
+  // Pending-write toast (user just wrote while offline)
+  if (meta.hasPendingWrites && !meta.fromCache) {
+    _toast("Saved — will sync when back online");
+  }
+
+  // New-pin notification: doc arrived since we last loaded, by another author, ≤5 min old
+  if (!meta.fromCache) {
+    const now         = Date.now();
+    const localAuthor = localStorage.getItem("atlas_author") || "";
+    valid.forEach((doc) => {
+      if (_seenCommunityIds.has(doc.id)) return;
+      if (doc.author === localAuthor) return;
+      const created = doc.createdAt?.toMillis ? doc.createdAt.toMillis() : 0;
+      if (created && now - created < 5 * 60 * 1000) {
+        _toast(`${doc.author} added ${doc.name} (${doc.island || "Aeolian"})`, 5000);
+      }
+    });
+  }
+  valid.forEach((doc) => _seenCommunityIds.add(doc.id));
+
+  // Refresh export button
+  if (_refreshExportBtn) _refreshExportBtn();
+}
+
+// ---- Firebase sync init (called once AtlasSync is ready) ----
+function _initFirebaseSync() {
+  _firebaseReady    = true;
+  _communityLayer   = L.layerGroup().addTo(map);
+
+  // Community layer toggle
+  const row = document.getElementById("community-layer-row");
+  if (row) row.hidden = false;
+  const tog = document.getElementById("tog-community");
+  if (tog) tog.addEventListener("change", (e) => {
+    if (e.target.checked) _communityLayer.addTo(map);
+    else                  map.removeLayer(_communityLayer);
+  });
+
+  // Register snapshot listener
+  window.AtlasSync.onSitesChanged(_onCommunitySnapshot);
+
+  // Update HUD state (enable place button, show author row)
+  _updateAddSiteHudFirebaseState();
+}
+
+// ================================================================
 // ---- Init ----
 function init() {
   loadCoordOverrides();
@@ -1793,19 +2147,46 @@ function init() {
 
   _buildExposureCache();
   applyFilters();
+
+  // Wire Firebase when its module finishes loading (fires after classic scripts)
+  if (window.AtlasSync) {
+    _initFirebaseSync();
+  } else {
+    window.addEventListener("atlassync:ready", _initFirebaseSync, { once: true });
+  }
 }
 
 // ---- PART E — Debug + validation spot-checks ----
 window.__exposureDebug = function(id) {
   const profile = _exposureCache.get(id);
   if (!profile) return { error: "No profile cached for " + id };
+
+  // Raw 72-bin polar blob — full resolution, not quantised
+  function _raw72Svg(p) {
+    const R = 36, cx = 40, cy = 40;
+    const pts = [];
+    for (let i = 0; i < 72; i++) {
+      const a = (i * 5 - 90) * Math.PI / 180;
+      const r = p[i] * R;
+      pts.push(`${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`);
+    }
+    const ticks = [['N',270],['E',0],['S',90],['W',180]].map(([lbl, svgDeg]) => {
+      const a = svgDeg * Math.PI / 180;
+      const x = (cx + (R + 6) * Math.cos(a)).toFixed(1);
+      const y = (cy + (R + 6) * Math.sin(a)).toFixed(1);
+      return `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" font-size="8" fill="#555">${lbl}</text>`;
+    }).join('');
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="-8 -8 96 96"><circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#ccc" stroke-width=".5"/><polygon points="${pts.join(' ')}" fill="rgba(94,224,198,.25)" stroke="#5ee0c6" stroke-width="1"/>${ticks}</svg>`;
+  }
+
   const site = SITES.find((s) => s.id === id) || POIS.find((p) => p.id === id);
-  if (!site) return { profile: Array.from(profile), error: "No site/POI with that id" };
+  if (!site) return { profile: Array.from(profile), svg: _raw72Svg(profile), error: "No site/POI with that id" };
   const basin = _basinForSite(site) || (_wxData ? _worseBasin(_wxData.marWest, _wxData.marEast) : null);
-  if (!basin) return { profile: Array.from(profile), note: "No weather data loaded yet" };
+  if (!basin) return { profile: Array.from(profile), svg: _raw72Svg(profile), note: "No weather data loaded yet" };
   const ss = siteSeaState(site, basin);
-  return { profile: Array.from(profile), factorW: ss.factorW, factorS: ss.factorS,
-           effective: ss.effective, level: ss.level, label: ss.label };
+  return { profile: Array.from(profile), svg: _raw72Svg(profile),
+           factorW: ss.factorW, factorS: ss.factorS, effective: ss.effective,
+           driveDir: ss.driveDir, level: ss.level, label: ss.label };
 };
 
 init();

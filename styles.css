@@ -860,3 +860,128 @@ select.ash-input { cursor: pointer; }
 @media (max-width: 820px) {
   #app.sb-collapsed #sidebar { margin-left: calc(var(--sb-w) * -1); }
 }
+
+/* ================================================================
+   Community sites (Firestore)
+   ================================================================ */
+
+/* Dashed ring distinguishes community pins from canon markers */
+.community-site-marker {
+  outline: 2px dashed rgba(99,179,237,.75);
+  outline-offset: 2px;
+}
+
+/* Community badge next to "Community sites" toggle */
+.community-count-badge {
+  margin-left: 6px;
+  background: rgba(99,179,237,.18);
+  color: #2b6cb0;
+}
+
+/* Attribution line inside site popup */
+.pop-community-meta {
+  font-size: .72rem;
+  color: var(--ink-mute);
+  margin: 4px 0 6px;
+  line-height: 1.4;
+}
+
+/* ---- Toast ---- */
+.atlas-toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: rgba(10,24,41,.92);
+  color: #e2f0ff;
+  font-size: .82rem;
+  line-height: 1.4;
+  padding: 9px 18px;
+  border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.45);
+  opacity: 0;
+  transition: opacity .22s, transform .22s;
+  z-index: 3000;
+  pointer-events: none;
+  max-width: calc(100vw - 48px);
+  text-align: center;
+  white-space: nowrap;
+}
+.atlas-toast--show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ---- Author identity modal ---- */
+/* author-scrim sits above the detail drawer (z 2000) but below the modal */
+#author-scrim { z-index: 2100; }
+.author-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2200;
+}
+.author-modal[hidden] { display: none !important; }
+.author-modal-inner {
+  background: var(--panel);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: var(--r-lg);
+  box-shadow: 0 12px 40px rgba(0,0,0,.55);
+  padding: 24px 24px 20px;
+  width: 100%;
+  max-width: 340px;
+  position: relative;
+  z-index: 1;
+}
+.author-modal-h {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 6px;
+}
+.author-modal-sub {
+  font-size: .8rem;
+  color: var(--ink-mute);
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+.author-modal-footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+/* Author row inside the add-site HUD */
+.ash-author-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 4px;
+}
+.ash-author-name {
+  font-size: .82rem;
+  color: var(--ink);
+  font-weight: 500;
+}
+.ash-link-btn {
+  background: none;
+  border: none;
+  color: var(--shallow);
+  font-size: .72rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  line-height: 1;
+}
+.ash-link-btn:hover { color: var(--ink); }
+
+/* Firebase unavailable note */
+.ash-firebase-note {
+  font-size: .72rem;
+  color: #e07046;
+  line-height: 1.4;
+  margin: 0 0 8px;
+}

@@ -59,6 +59,11 @@
           <div class="layer-sep"></div>
           <label class="check"><input type="checkbox" id="tog-anchorages" /> <span>Boat anchorages</span><i class="dot anchor"></i></label>
           <label class="check"><input type="checkbox" id="tog-reachable" /> <span>Only sites swimmable from an anchorage</span></label>
+          <div id="community-layer-row" class="check" hidden>
+            <input type="checkbox" id="tog-community" checked />
+            <span>Community sites</span>
+            <span id="community-count" class="count community-count-badge">0</span>
+          </div>
           <button id="add-site-sb-btn" class="add-site-sb-toggle">✚ Add a site</button>
         </section>
 
@@ -173,9 +178,15 @@
             <span class="ash-label">Notes <span class="ash-optional">(optional)</span></span>
             <textarea id="ash-notes" class="ash-input ash-textarea" rows="3" placeholder="What makes this spot special?"></textarea>
           </label>
+          <div id="ash-author-row" class="ash-field ash-author-row" hidden>
+            <span class="ash-label">Adding as</span>
+            <span id="ash-author-name" class="ash-author-name">—</span>
+            <button id="ash-change-author" class="ash-link-btn" type="button">change</button>
+          </div>
         </div>
         <div class="ash-footer">
           <p class="ash-hint">Fill in the details, then click to drop the pin.</p>
+          <p id="ash-firebase-note" class="ash-firebase-note" hidden>⚠ Shared sites unavailable — check connection or config</p>
           <button id="ash-place-btn" class="ash-place-btn">Place pin on map ›</button>
         </div>
       </div>
@@ -191,6 +202,24 @@
   </div>
   <div id="drawer-scrim" class="drawer-scrim" hidden></div>
 
+  <!-- Author identity modal (shown on first community pin attempt) -->
+  <div id="author-modal" class="author-modal" hidden aria-modal="true" role="dialog" aria-labelledby="author-modal-h">
+    <div class="author-modal-inner">
+      <h3 class="author-modal-h" id="author-modal-h">Who's adding this?</h3>
+      <p class="author-modal-sub">Your name appears on shared pins so fellow sailors know who found it.</p>
+      <label class="ash-field">
+        <span class="ash-label">Your name</span>
+        <input id="author-name-input" class="ash-input" type="text" placeholder="e.g. Seb" maxlength="40" autocomplete="name" />
+      </label>
+      <div class="author-modal-footer">
+        <button id="author-cancel-btn" class="ash-cancel-btn" type="button">Cancel</button>
+        <button id="author-save-btn"   class="ash-place-btn"  type="button">Save &amp; continue</button>
+      </div>
+    </div>
+  </div>
+  <div id="author-scrim" class="drawer-scrim" hidden></div>
+
+  <script type="module" src="firebase-sync.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.js"></script>
