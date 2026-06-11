@@ -79,9 +79,13 @@ const labels = L.tileLayer(
   }
 ).addTo(map);
 
-// Island overview pane — z450, below marker pane (z600) so ov-* markers stay behind
-map.createPane("islandPane");
-map.getPane("islandPane").style.zIndex = 450;
+// Island label pane — z350, below overlay (400) + marker (600) panes so labels never obscure pins
+map.createPane("labelPane");
+map.getPane("labelPane").style.zIndex = 350;
+
+// Spearfishing circle pane — z380, above tiles, below markers; hidden at zoom-far via CSS
+map.createPane("spearfishPane");
+map.getPane("spearfishPane").style.zIndex = 380;
 
 // ---- Layer groups ----
 const siteLayer = L.markerClusterGroup({
@@ -265,7 +269,7 @@ function buildPois() {
   poiLayer.clearLayers();
   for (const id in poiMarkerById) delete poiMarkerById[id];
   POIS.forEach((poi) => {
-    if (poi.type === "island") return; // island overviews handled by buildIslandMarkers
+    if (poi.type === "island") return; // island overviews handled by buildIslandLabels
     const ovr = _posOverrides.get(poi.id);
     const m = L.marker([ovr?.lat ?? poi.lat, ovr?.lng ?? poi.lng], {
       icon: poiIcon(poi, !!ovr),
@@ -277,19 +281,38 @@ function buildPois() {
   });
 }
 
-function buildIslandMarkers() {
+function buildIslandLabels() {
   POIS.filter((p) => p.type === "island").forEach((poi) => {
     const icon = L.divIcon({
       className: "",
-      html: `<div class="island-ov-marker">⊙</div>`,
-      iconSize: [22, 22],
-      iconAnchor: [11, 11]
+      html: `<div class="island-label-wrap"><span class="island-label-inner">${poi.name.toUpperCase()}</span></div>`,
+      iconSize: [130, 24],
+      iconAnchor: [65, 12]
     });
-    const m = L.marker([poi.lat, poi.lng], { icon, pane: "islandPane", title: poi.name });
-    if (poi.notes) m.bindPopup(`<div class="pop-poi"><b>${poi.name}</b><p class="pop-poi-notes">${poi.notes}</p></div>`, { maxWidth: 260 });
+    const m = L.marker([poi.lat, poi.lng], { icon, pane: "labelPane", interactive: false });
     m.addTo(map);
+    const el = m.getElement();
+    el?.querySelector(".island-label-inner")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (map.getZoom() >= 10 && map.getZoom() < 12) openIslandDrawer(poi.id);
+    });
   });
 }
+
+function openIslandDrawer(id) {
+  const poi = POIS.find((p) => p.id === id && p.type === "island");
+  if (!poi) return;
+  document.getElementById("drawer-body").innerHTML = `
+    <h2 class="d-title">${poi.name}</h2>
+    <div class="d-island">ISLAND OVERVIEW</div>
+    <p class="d-desc" style="margin-top:14px">${poi.notes || ""}</p>
+  `;
+  document.getElementById("drawer").classList.add("open");
+  const scrim = document.getElementById("drawer-scrim");
+  scrim.hidden = false;
+  requestAnimationFrame(() => scrim.classList.add("show"));
+}
+window.openIslandDrawer = openIslandDrawer;
 
 
 // ---- Filtering ----
@@ -673,6 +696,17 @@ function openDrawer(id) {
 
     <div class="d-section-h">Sea state now</div>
     <div id="d-sea-row"></div>
+
+    ${(() => {
+      const sp = _spearMap?.get(site.id);
+      if (!sp) return "";
+      const st = _SPEAR_STATUS[sp.status];
+      return `<div class="d-section-h">Spearfishing</div>
+    <div class="d-spear-row">
+      <span class="d-spear-pill spear-${sp.status}">${st.label}</span>
+      <p class="d-spear-reason">${sp.reason}</p>
+    </div>`;
+    })()}
 
     <div class="d-section-h">Details</div>
     <table class="d-table">
@@ -2374,6 +2408,102 @@ function _runNearby() {
 }
 
 // ================================================================
+// ================================================================
+// ---- Spearfishing legality layer --------------------------------
+// ================================================================
+
+let _spearMap   = null;   // Map<siteId, {status, radius, reason}>
+let _spearLayer = null;   // L.layerGroup, built lazily on first enable
+let _spearToastShown = false;
+
+const _SPEAR_STATUS = {
+  banned:     { label: "Banned",        color: "#FF453A", fillOpacity: 0.16, weight: 1.5, dashArray: null },
+  restricted: { label: "Restricted",    color: "#FF453A", fillOpacity: 0.16, weight: 1.5, dashArray: null },
+  verify:     { label: "Verify locally",color: "#FFD60A", fillOpacity: 0.10, weight: 1,   dashArray: "4 5" }
+};
+
+function _buildSpearClassification() {
+  const result = new Map();
+  const bannedIds = new Set(SPEAR_RULES.bannedZones.map((z) => z.id));
+
+  SITES.forEach((site) => {
+    if (bannedIds.has(site.id)) {
+      const zone = SPEAR_RULES.bannedZones.find((z) => z.id === site.id);
+      result.set(site.id, { status: "banned", radius: zone.radius, reason: zone.reason });
+    } else if (site.type === "beach") {
+      result.set(site.id, { status: "restricted", radius: SPEAR_RULES.beachRadius,
+        reason: "Illegal within 500 m of bathing beaches (Italian maritime law)" });
+    } else if (SPEAR_RULES.portIds.includes(site.id)) {
+      result.set(site.id, { status: "restricted", radius: SPEAR_RULES.portRadius,
+        reason: "Within 500 m of a port/harbour — prohibited" });
+    } else if (FEATURE_TYPES[site.type]) {
+      result.set(site.id, { status: "verify", radius: 300,
+        reason: "Generally permitted under national rules — daylight only, no scuba, ≥500 m from bathers, ≥100 m from moored vessels and fishing gear. Local ordinances vary: verify before loading a speargun." });
+    }
+  });
+
+  // Banned POIs (dive_site / shipwreck in bannedZones)
+  POIS.forEach((poi) => {
+    if (bannedIds.has(poi.id)) {
+      const zone = SPEAR_RULES.bannedZones.find((z) => z.id === poi.id);
+      result.set(poi.id, { status: "banned", radius: zone.radius, reason: zone.reason });
+    }
+  });
+
+  return result;
+}
+
+function buildSpearfishingLayer() {
+  if (_spearLayer) { _spearLayer.clearLayers(); } else { _spearLayer = L.layerGroup(); }
+
+  _spearMap.forEach((cls, id) => {
+    const src = SITES.find((s) => s.id === id) || POIS.find((p) => p.id === id);
+    if (!src) return;
+    const ovr = _posOverrides.get(id);
+    const lat = ovr?.lat ?? src.lat;
+    const lng = ovr?.lng ?? src.lng;
+    const st  = _SPEAR_STATUS[cls.status];
+    L.circle([lat, lng], {
+      radius:      cls.radius,
+      pane:        "spearfishPane",
+      interactive: false,
+      color:       st.color,
+      weight:      st.weight,
+      dashArray:   st.dashArray,
+      fillColor:   st.color,
+      fillOpacity: st.fillOpacity,
+      opacity:     0.7
+    }).addTo(_spearLayer);
+  });
+}
+
+function initSpear() {
+  const tog = document.getElementById("tog-spear");
+  if (!tog) return;
+  tog.addEventListener("change", () => {
+    if (tog.checked) {
+      if (!_spearMap) _spearMap = _buildSpearClassification();
+      if (!_spearLayer || !_spearLayer.getLayers().length) buildSpearfishingLayer();
+      _spearLayer.addTo(map);
+      if (!_spearToastShown) {
+        _spearToastShown = true;
+        _toast("Indicative only — always check current local ordinances. Fines for violations are severe.", 5500);
+      }
+    } else {
+      if (_spearLayer) map.removeLayer(_spearLayer);
+    }
+  });
+}
+
+// ---- Zoom-band marker scaling ----
+function _updateZoomBand() {
+  const z  = map.getZoom();
+  const el = document.getElementById("map");
+  el.classList.toggle("zoom-far",  z < 10);
+  el.classList.toggle("zoom-mid",  z >= 10 && z < 12);
+  el.classList.toggle("zoom-near", z >= 12);
+}
+
 // ---- Offline pill ----
 function initOffline() {
   const pill = document.getElementById("offline-pill");
@@ -2452,7 +2582,7 @@ function init() {
   buildSiteMarkers();
   buildAnchorages();
   buildPois();
-  buildIslandMarkers();
+  buildIslandLabels();
 
   document.getElementById("tog-anchorages").addEventListener("change", (e) => {
     state.showAnchorages = e.target.checked;
@@ -2489,6 +2619,10 @@ function init() {
     if (_playTimer) { clearInterval(_playTimer); _playTimer = null; document.getElementById("wxt-play").textContent = "▶"; }
   });
 
+  // Zoom band for marker scaling + island labels visibility
+  map.on("zoomend", _updateZoomBand);
+  _updateZoomBand();
+
   // Keep canvas calibrated on map zoom/pan/resize
   map.on("zoomend moveend", () => {
     if (_windAnimActive) { _resizeWindCanvas(); _initParticles(_currentForecastWind().deg); }
@@ -2521,6 +2655,8 @@ function init() {
   document.getElementById("drag-confirm-btn").addEventListener("click", confirmDrag);
   document.getElementById("drag-cancel-btn").addEventListener("click", cancelDrag);
 
+  _spearMap = _buildSpearClassification();
+  initSpear();
   initAddSite();
   loadUserSites();
   initNearby();

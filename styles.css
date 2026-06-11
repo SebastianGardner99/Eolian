@@ -1473,13 +1473,6 @@ body {
   padding: 10px 12px; font-size: .82rem; color: var(--ink-mute);
 }
 
-/* ---- Island overview markers ---- */
-.island-ov-marker {
-  width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
-  font-size: .85rem; color: #8E8E93; background: rgba(0,0,0,.35);
-  border-radius: 50%; border: 1.5px solid rgba(142,142,147,.5);
-  cursor: pointer;
-}
 
 /* ---- Offline pill ---- */
 .offline-pill {
@@ -1507,10 +1500,85 @@ body {
 .precache-bar { height: 100%; width: 0; background: var(--shallow); border-radius: 2px; transition: width .2s; }
 .precache-label { font-size: .7rem; color: var(--ink-mute); white-space: nowrap; }
 
+/* ---- Spearfishing dot indicator ---- */
+.dot.spear-legal {
+  background: linear-gradient(90deg, #FF453A 50%, #FFD60A 50%);
+  box-shadow: 0 0 0 2px rgba(255,69,58,.2);
+}
+
+/* ---- Spearfishing drawer row ---- */
+.d-spear-row {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r-md); padding: 11px 13px; margin-bottom: 4px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.d-spear-pill {
+  display: inline-block; font-size: .72rem; font-weight: 700;
+  padding: 3px 9px; border-radius: 20px; letter-spacing: .03em;
+  width: fit-content;
+}
+.spear-banned     { background: rgba(255,69,58,.22);  color: #FF453A; }
+.spear-restricted { background: rgba(255,69,58,.22);  color: #FF453A; }
+.spear-verify     { background: rgba(255,214,10,.18); color: #D4A800; }
+.d-spear-reason {
+  font-size: .78rem; color: var(--ink-mute); line-height: 1.45; margin: 0;
+}
+
+/* ================================================================
+   ZOOM-BAND MARKER SCALING
+   Classes zoom-far / zoom-mid / zoom-near are toggled on #map
+   by _updateZoomBand() on every zoomend + init.
+   ================================================================ */
+
+/* ---- zoom-far (z < 10): hide all markers, clusters, anchors; show labels ---- */
+.zoom-far .leaflet-marker-pane,
+.zoom-far .leaflet-shadow-pane { display: none; }
+/* spear circles also hidden */
+.zoom-far .leaflet-spearfishPane-pane { display: none; }
+
+/* ---- zoom-mid (10 ≤ z < 12): scale markers to 60%, labels visible ---- */
+.zoom-mid .depth-marker,
+.zoom-mid .poi-marker,
+.zoom-mid .anchor-icon {
+  transform: scale(0.6);
+  transform-origin: center bottom;
+  transition: transform 150ms ease;
+}
+/* hover at mid zoom — slightly larger but still scaled */
+.zoom-mid .depth-marker:hover { transform: scale(0.75); transform-origin: center bottom; }
+.zoom-mid .poi-marker:hover   { transform: scale(0.75); transform-origin: center bottom; }
+
+/* ---- zoom-near (z ≥ 12): full-size markers, labels hidden ---- */
+.zoom-near .leaflet-labelPane-pane { display: none; }
+
+/* ---- Island labels (all zoom levels, hidden at near by rule above) ---- */
+.island-label-wrap {
+  pointer-events: none;           /* default: don't block map pan/zoom */
+  white-space: nowrap;
+  user-select: none;
+}
+.island-label-inner {
+  font-family: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,.85);
+  text-shadow: 0 0 3px #000, 1px 1px 0 rgba(0,0,0,.9), -1px -1px 0 rgba(0,0,0,.9);
+  display: inline-block;
+  font-size: 13px;       /* zoom-far */
+  line-height: 1;
+}
+
+/* At mid zoom: larger, interactive */
+.zoom-mid .island-label-wrap { pointer-events: auto; cursor: pointer; }
+.zoom-mid .island-label-inner { font-size: 15px; }
+
 /* ---- Prefers-reduced-motion: disable spring + slide ---- */
 @media (prefers-reduced-motion: reduce) {
   .drawer { transition: none; }
   .atlas-toast { transition: opacity 150ms linear; }
   .check input[type="checkbox"],
   .check input[type="checkbox"]::before { transition: none; }
+  .zoom-mid .depth-marker,
+  .zoom-mid .poi-marker,
+  .zoom-mid .anchor-icon { transition: none; }
 }
