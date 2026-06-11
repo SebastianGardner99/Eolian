@@ -2,7 +2,6 @@
 // Alonissos — Gardner's Guide
 // Application logic (catamaran edition)
 // ============================================================
-
 // ---- State ----
 const state = {
   depth: { surface: true, mid: true, lower: true },
@@ -566,6 +565,9 @@ function openDrawer(id) {
     <div class="d-section-h">Proximity to boat anchorages</div>
     ${proxHtml}
 
+    <div class="d-section-h">Sea state now</div>
+    <div id="d-sea-row"></div>
+
     <div class="d-section-h">Details</div>
     <table class="d-table">
       <tr><th>Feature type</th><td>${ft.glyph} ${ft.label}</td></tr>
@@ -595,6 +597,13 @@ function openDrawer(id) {
     </div>` : ""}
   `;
   document.getElementById("drawer-body").innerHTML = body;
+  _renderSiteSeaStateRow(site);
+  if (_wxFetchTime && Date.now() - _wxFetchTime > 60 * 60 * 1000) {
+    fetchWeather().then((d) => {
+      renderWeather(d);
+      if (document.getElementById("drawer").classList.contains("open")) _renderSiteSeaStateRow(site);
+    }).catch(() => {});
+  }
 
   if (site.approx) {
     // GPS button
@@ -776,10 +785,19 @@ function wireSegments(containerId, key) {
 // ================================================================
 // ---- Wind & Sea conditions ------------------------------------
 // ================================================================
-const WX_LAT = 38.48;
+const WX_LAT = 38.48;  // wind-only fetch (Lipari land point — fine for direction)
 const WX_LNG = 14.95;
+// Two open-water marine fetch points — the on-land Lipari point returns null for
+// wave data and the ?? 0 masking was showing false "flat calm" readings.
+// Basin assignment: west = [Alicudi, Filicudi]; east = [Stromboli, Panarea, Panarea islets];
+// central islands (Lipari, Vulcano, Salina) use whichever basin is rougher (conservative).
+const MARINE_POINTS = {
+  west: { lat: 38.57, lng: 14.45, label: "west basin" },
+  east: { lat: 38.75, lng: 15.20, label: "east basin" }
+};
 const windArrowLayer = L.layerGroup();
-let _wxData = null;
+let _wxData      = null;
+let _wxFetchTime = null;
 
 function beaufortLabel(knots) {
   if (knots < 1)  return { label: "Calm",          color: "#5ee0c6", score: 0 };
@@ -794,6 +812,7 @@ function beaufortLabel(knots) {
 }
 
 function snorkelVerdict(windKnots, waveM) {
+  if (waveM == null) return { text: "⚠ Sea state unavailable", cls: "wx-warn" };
   if (windKnots <= 10 && waveM <= 0.3) return { text: "✓ Excellent conditions",   cls: "wx-good" };
   if (windKnots <= 15 && waveM <= 0.6) return { text: "◐ Decent — check spots",   cls: "wx-ok"   };
   if (windKnots <= 20 && waveM <= 1.0) return { text: "⚠ Marginal — shore spots", cls: "wx-warn" };
@@ -806,14 +825,22 @@ function degToCompass(deg) {
   return dirs[Math.round(deg / 22.5) % 16];
 }
 
+// Shared angular helpers — used by shelterAnalysis() and siteSeaState().
+function _bearingBin(deg) {
+  if (deg == null) return 0;
+  return Math.round(((deg % 360) + 360) % 360 / 5) % 72;
+}
+function _angleDiff(a, b) {
+  const d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
+}
+
 function shelterAnalysis(windDeg) {
   if (windDeg == null || !ANCHORAGES) return [];
   const sheltered = [];
   ANCHORAGES.forEach((a) => {
     if (a.openBearing == null) return;
-    const d    = Math.abs(a.openBearing - windDeg) % 360;
-    const diff = d > 180 ? 360 - d : d;
-    if (diff > 90) sheltered.push(a.name);
+    if (_angleDiff(a.openBearing, windDeg) > 90) sheltered.push(a.name);
   });
   return sheltered;
 }
@@ -821,15 +848,18 @@ function shelterAnalysis(windDeg) {
 async function fetchWeather() {
   const ctrl  = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 12000);
+  const marF  = "wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction";
   try {
-    const [wxRes, marRes] = await Promise.all([
+    const [wxRes, marWRes, marERes] = await Promise.all([
       fetch(`https://api.open-meteo.com/v1/forecast?latitude=${WX_LAT}&longitude=${WX_LNG}&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m,weather_code&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&timezone=Europe%2FRome&forecast_days=3`, { signal: ctrl.signal }),
-      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${WX_LAT}&longitude=${WX_LNG}&current=wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction&timezone=Europe%2FRome`, { signal: ctrl.signal })
+      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${MARINE_POINTS.west.lat}&longitude=${MARINE_POINTS.west.lng}&current=${marF}&timezone=Europe%2FRome`, { signal: ctrl.signal }),
+      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${MARINE_POINTS.east.lat}&longitude=${MARINE_POINTS.east.lng}&current=${marF}&timezone=Europe%2FRome`, { signal: ctrl.signal })
     ]);
-    if (!wxRes.ok)  throw new Error(`Weather API ${wxRes.status}`);
-    if (!marRes.ok) throw new Error(`Marine API ${marRes.status}`);
-    const [wx, mar] = await Promise.all([wxRes.json(), marRes.json()]);
-    return { wx: wx.current, mar: mar.current, forecast: wx.hourly };
+    if (!wxRes.ok)   throw new Error(`Weather API ${wxRes.status}`);
+    if (!marWRes.ok) throw new Error(`Marine W API ${marWRes.status}`);
+    if (!marERes.ok) throw new Error(`Marine E API ${marERes.status}`);
+    const [wx, marW, marE] = await Promise.all([wxRes.json(), marWRes.json(), marERes.json()]);
+    return { wx: wx.current, marWest: marW.current, marEast: marE.current, forecast: wx.hourly };
   } finally {
     clearTimeout(timer);
   }
@@ -841,27 +871,44 @@ function windArrowSvg(deg, color, size = 14) {
   return `<svg width="${size}" height="${size}" viewBox="0 0 14 14" style="transform:rotate(${rot}deg);flex-shrink:0" fill="${color}"><path d="M7 1 L4 10 L7 7.5 L10 10 Z"/></svg>`;
 }
 
+// Returns whichever basin object reports higher wave_height, with a _basinLabel field added.
+function _worseBasin(marWest, marEast) {
+  const wW = marWest ? marWest.wave_height : null;
+  const wE = marEast ? marEast.wave_height : null;
+  if (wW == null && wE == null) return { ...(marWest || marEast || {}), _basinLabel: "" };
+  if (wW == null) return { ...marEast,  _basinLabel: MARINE_POINTS.east.label };
+  if (wE == null) return { ...marWest,  _basinLabel: MARINE_POINTS.west.label };
+  return wW >= wE
+    ? { ...marWest, _basinLabel: MARINE_POINTS.west.label }
+    : { ...marEast, _basinLabel: MARINE_POINTS.east.label };
+}
+
 function renderWeather(data) {
   const wx  = data.wx;
-  const mar = data.mar;
+  const mar = _worseBasin(data.marWest, data.marEast);
 
-  const windKnots  = wx.wind_speed_10m        ?? 0;
-  const windDir    = wx.wind_direction_10m;
-  const gustKnots  = wx.wind_gusts_10m        ?? windKnots;
-  const waveM      = mar.wave_height          ?? 0;
-  const waveDir    = mar.wave_direction;
-  const wavePeriod = mar.wave_period          ?? 0;
-  const swellM     = mar.swell_wave_height    ?? 0;
-  const swellDir   = mar.swell_wave_direction;
+  const windKnots  = wx.wind_speed_10m     ?? 0;
+  const windDir    = wx.wind_direction_10m ?? null;
+  const gustKnots  = wx.wind_gusts_10m     ?? windKnots;
+  const waveM      = mar.wave_height          ?? null;
+  const waveDir    = mar.wave_direction       ?? null;
+  const wavePeriod = mar.wave_period          ?? null;
+  const swellM     = mar.swell_wave_height    ?? null;
+  const swellDir   = mar.swell_wave_direction ?? null;
 
-  const bf       = beaufortLabel(windKnots);
-  const verdict  = snorkelVerdict(windKnots, waveM);
+  const bf        = beaufortLabel(windKnots);
+  const verdict   = snorkelVerdict(windKnots, waveM);
   const sheltered = shelterAnalysis(windDir);
   const now = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
   const shelterHtml = sheltered.length
     ? `<div class="wx-shelter-label">Sheltered bays now</div>${sheltered.map((n) => `<span class="wx-shelter-bay">${n}</span>`).join("")}`
     : `<div class="wx-shelter-none">Add <code>openBearing</code> to anchorages in data.js to enable shelter analysis.</div>`;
+
+  const waveFmt  = waveM      != null ? waveM.toFixed(1) + " m"       : "—";
+  const swellFmt = swellM     != null ? swellM.toFixed(1) + " m"      : "—";
+  const perFmt   = wavePeriod != null ? wavePeriod.toFixed(0) + " s"  : "—";
+  const basinSub = mar._basinLabel ? ` · ${mar._basinLabel}` : "";
 
   document.getElementById("wx-body").innerHTML = `
     <div class="wx-verdict ${verdict.cls}">${verdict.text}</div>
@@ -873,12 +920,12 @@ function renderWeather(data) {
       </div>
       <div class="wx-cell">
         <div class="wx-cell-label">Waves</div>
-        <div class="wx-cell-val">${windArrowSvg(waveDir, "#6fa8ff")}<span style="color:#6fa8ff">${waveM.toFixed(1)} m</span></div>
-        <div class="wx-cell-sub">${degToCompass(waveDir)} · ${wavePeriod.toFixed(0)} s</div>
+        <div class="wx-cell-val">${windArrowSvg(waveDir, "#6fa8ff")}<span style="color:#6fa8ff">${waveFmt}</span></div>
+        <div class="wx-cell-sub">${degToCompass(waveDir)} · ${perFmt}${basinSub}</div>
       </div>
       <div class="wx-cell">
         <div class="wx-cell-label">Swell</div>
-        <div class="wx-cell-val">${windArrowSvg(swellDir, "#7c8cf0")}<span style="color:#7c8cf0">${swellM.toFixed(1)} m</span></div>
+        <div class="wx-cell-val">${windArrowSvg(swellDir, "#7c8cf0")}<span style="color:#7c8cf0">${swellFmt}</span></div>
         <div class="wx-cell-sub">${degToCompass(swellDir)}</div>
       </div>
     </div>
@@ -887,15 +934,17 @@ function renderWeather(data) {
   `;
 
   document.getElementById("wx-overlay-label").style.display = "";
-  _wxData = data;
+  _wxData      = data;
+  _wxFetchTime = Date.now();
   if (document.getElementById("tog-wind-overlay").checked) startWindAnimation();
   initForecast(data.forecast);
 }
 
 function buildWindArrows(d) {
   windArrowLayer.clearLayers();
-  const windRot = ((d.wx.wind_direction_10m  ?? 0) + 180) % 360;
-  const waveRot = ((d.mar.wave_direction     ?? 0) + 180) % 360;
+  const mar = _worseBasin(d.marWest, d.marEast);
+  const windRot = ((d.wx.wind_direction_10m ?? 0) + 180) % 360;
+  const waveRot = ((mar.wave_direction      ?? 0) + 180) % 360;
 
   const points = [
     ...ANCHORAGES.map((a) => [a.lat, a.lng]),
@@ -925,6 +974,221 @@ async function loadWeather() {
   } catch (err) {
     body.innerHTML = `<div class="wx-error">Could not load conditions — check your connection.<br><small>${err.message}</small></div>`;
   }
+}
+
+// ================================================================
+// ---- PART B — Computed exposure profiles (geometry layer) -----
+// ================================================================
+//
+// computeExposureProfile(lat, lng) → Float32Array(72)
+//   One entry per 5° bearing bin; 1.0 = fully exposed, 0.0 = fully blocked.
+//
+// Decay table (blocking distance d to shelter factor):
+//   d ≤ 1 000 m → 0.15  (immediate lee)
+//   d ≤ 4 000 m → 0.40  (strong shadow)
+//   d ≤ 8 000 m → 0.65  (partial — swell diffracts around)
+//   d ≤ 15 000 m→ 0.85  (weak — wind chop regenerates)
+//   no hit      → 1.00  (open fetch)
+//
+// NOTE: the 1/4/8/15 km breakpoints are defensible rules of thumb from
+// fetch-limited wave growth (15–20 kn wind needs ~10+ km fetch to rebuild
+// ~0.5 m chop) and from the diffraction behaviour of 6–10 s Mediterranean
+// swell — not a textbook table. They are TUNABLE; the __exposureDebug hook
+// exists to calibrate them on the water. LAND_MASSES radii are estimates
+// (Lipari and Salina are elongated); a future upgrade swaps circles for
+// 8-point polygons while the ray-cast interface stays identical.
+
+const _exposureCache = new Map();
+
+function computeExposureProfile(lat, lng) {
+  const cosLat = Math.cos(lat * Math.PI / 180);
+  const mLat   = 111320;
+  const mLng   = 111320 * cosLat;
+  const raw    = new Float32Array(72);
+
+  for (let i = 0; i < 72; i++) {
+    const theta = i * 5 * Math.PI / 180;
+    const dx = Math.sin(theta);  // east component
+    const dy = Math.cos(theta);  // north component
+    let minFactor = 1.0;
+
+    for (const lm of LAND_MASSES) {
+      // Circle centre in local metres (east=x, north=y), site at origin.
+      const cx = (lm.lng - lng) * mLng;
+      const cy = (lm.lat - lat) * mLat;
+      // v = site – circle_centre = (-cx, -cy)
+      const vx = -cx, vy = -cy;
+      const len2 = cx * cx + cy * cy;
+      const c    = len2 - lm.r * lm.r;
+      const dot  = vx * dx + vy * dy;  // v · D
+      const disc = dot * dot - c;
+
+      if (disc < 0) continue;  // ray misses circle
+
+      // Site inside circle (c < 0) and ray going away from centre: the ray
+      // exits on the seaward side — skip so shore sites read exposed outward.
+      if (c < 0 && dot > 0) continue;
+
+      const sqD = Math.sqrt(disc);
+      const t1  = -dot - sqD;
+      const t2  = -dot + sqD;
+
+      // Smallest intersection ahead of the site, beyond the 50 m shoreline buffer.
+      let t = -1;
+      if      (t1 > 50)    t = t1;
+      else if (t2 > 50)    t = t2;
+      if (t < 0 || t > 15000) continue;
+
+      let factor;
+      if      (t <= 1000)  factor = 0.15;
+      else if (t <= 4000)  factor = 0.40;
+      else if (t <= 8000)  factor = 0.65;
+      else                 factor = 0.85;
+
+      // Small obstacle (r < 300 m) can't reduce below 0.70 — waves wrap around.
+      if (lm.r < 300) factor = Math.max(factor, 0.70);
+
+      if (factor < minFactor) minFactor = factor;
+    }
+    raw[i] = minFactor;
+  }
+
+  // Diffraction smear: shelter leaks sideways because waves bend into shadows.
+  // smoothed[i] = max over j in [i-4..i+4] of raw[j] × (j===i ? 1 : 0.85)
+  const smoothed = new Float32Array(72);
+  for (let i = 0; i < 72; i++) {
+    let best = raw[i];
+    for (let j = -4; j <= 4; j++) {
+      if (j === 0) continue;
+      const ni = ((i + j) % 72 + 72) % 72;
+      const candidate = raw[ni] * 0.85;
+      if (candidate > best) best = candidate;
+    }
+    smoothed[i] = best;
+  }
+  return smoothed;
+}
+
+// Compute profiles for every water SITE and every POI type that matters.
+const _POI_PROFILE_TYPES = new Set(["cliff_jump", "shipwreck", "beach"]);
+function _buildExposureCache() {
+  SITES.forEach((s) => _exposureCache.set(s.id, computeExposureProfile(s.lat, s.lng)));
+  POIS.forEach((p) => {
+    if (_POI_PROFILE_TYPES.has(p.type)) _exposureCache.set(p.id, computeExposureProfile(p.lat, p.lng));
+  });
+}
+
+// ================================================================
+// ---- PART C — Site-level verdict logic ------------------------
+// ================================================================
+
+// Which basin to use for a given site's island.
+function _basinForSite(site) {
+  if (!_wxData) return null;
+  const isl = site.island;
+  if (isl === "Alicudi" || isl === "Filicudi")
+    return _wxData.marWest;
+  if (isl === "Stromboli" || isl === "Panarea" || isl === "Panarea islets")
+    return _wxData.marEast;
+  // Lipari, Vulcano, Salina — use the rougher basin (conservative).
+  const wW = _wxData.marWest ? _wxData.marWest.wave_height : null;
+  const wE = _wxData.marEast ? _wxData.marEast.wave_height : null;
+  if (wW == null && wE == null) return _wxData.marWest || _wxData.marEast;
+  if (wW == null) return _wxData.marEast;
+  if (wE == null) return _wxData.marWest;
+  return wW >= wE ? _wxData.marWest : _wxData.marEast;
+}
+
+function siteSeaState(site, basin) {
+  if (!basin || basin.wave_height == null) {
+    return { level: "unknown", label: "Sea state unavailable — check conditions visually",
+             factorW: null, factorS: null, effective: null };
+  }
+  const profile = _exposureCache.get(site.id);
+  if (!profile) {
+    return { level: "unknown", label: "Exposure data unavailable",
+             factorW: null, factorS: null, effective: null };
+  }
+
+  const binW    = _bearingBin(basin.wave_direction);
+  const binS    = _bearingBin(basin.swell_wave_direction);
+  const factorW = profile[binW];
+  let   factorS = profile[binS];
+  if ((basin.wave_period ?? 0) > 8) factorS = Math.min(1.0, factorS + 0.15);
+
+  const effectiveW = basin.wave_height * factorW;
+  const effectiveS = (basin.swell_wave_height ?? 0) * factorS;
+  const effective  = Math.max(effectiveW, effectiveS);
+  const domFactor  = effectiveW >= effectiveS ? factorW : factorS;
+
+  const level      = effective <= 0.3 ? "calm" : effective <= 0.7 ? "moderate" : "rough";
+  const exposure   = domFactor >= 0.85 ? "fully exposed"
+                   : domFactor >= 0.40 ? "partially sheltered" : "well sheltered";
+  const expect     = domFactor >= 0.85 ? "expect full sea state"
+                   : domFactor >= 0.40 ? "some chop likely" : "likely calm";
+
+  const wStr  = basin.wave_height.toFixed(1) + " m";
+  const eStr  = effective.toFixed(1);
+  const label = `Regional waves ${wStr} from ${degToCompass(basin.wave_direction)} · ${site.name} is ${exposure} from that direction — ${expect} (~${eStr} m)`;
+  return { level, label, factorW, factorS, effective, domFactor };
+}
+
+// ================================================================
+// ---- PART D (helpers) — Exposure rose + drawer row ------------
+// ================================================================
+
+function _exposureRoseSvg(profile, waveDir, swellDir) {
+  const R = 28, cx = 32, cy = 32;
+  const toAng = (deg) => (deg - 90) * Math.PI / 180;
+  const pts = [];
+  for (let i = 0; i < 72; i++) {
+    const a = toAng(i * 5);
+    const r = profile[i] * R;
+    pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+  }
+  const pathD = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join("") + "Z";
+  const ticks = ["N", "E", "S", "W"].map((lbl, i) => {
+    const a = toAng(i * 90);
+    return `<line x1="${(cx + R * Math.cos(a)).toFixed(1)}" y1="${(cy + R * Math.sin(a)).toFixed(1)}"
+      x2="${(cx + (R - 4) * Math.cos(a)).toFixed(1)}" y2="${(cy + (R - 4) * Math.sin(a)).toFixed(1)}"
+      stroke="rgba(36,66,87,.7)" stroke-width="1.2"/>`;
+  }).join("");
+  function arrow(deg, color) {
+    if (deg == null) return "";
+    const a  = toAng(deg);
+    const x2 = (cx + R * Math.cos(a)).toFixed(1);
+    const y2 = (cy + R * Math.sin(a)).toFixed(1);
+    return `<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="2" stroke-linecap="round" opacity=".85"/>
+    <circle cx="${x2}" cy="${y2}" r="2.5" fill="${color}" opacity=".85"/>`;
+  }
+  return `<svg width="64" height="64" viewBox="0 0 64 64" style="flex-shrink:0">
+    <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="rgba(36,66,87,.4)" stroke-width="1"/>
+    <circle cx="${cx}" cy="${cy}" r="${R * 0.5}" fill="none" stroke="rgba(36,66,87,.2)" stroke-width=".5" stroke-dasharray="2,2"/>
+    ${ticks}
+    <path d="${pathD}" fill="rgba(94,224,198,.2)" stroke="rgba(94,224,198,.5)" stroke-width="1"/>
+    ${arrow(waveDir, "#6fa8ff")}${arrow(swellDir, "#7c8cf0")}
+  </svg>`;
+}
+
+function _renderSiteSeaStateRow(site) {
+  const rowEl = document.getElementById("d-sea-row");
+  if (!rowEl) return;
+  const basin = _basinForSite(site);
+  if (!basin) {
+    rowEl.innerHTML = `<div class="d-sea-state"><span class="sea-dot sea-dot-unknown"></span><span>Sea data loading…</span></div>`;
+    return;
+  }
+  const ss      = siteSeaState(site, basin);
+  const profile = _exposureCache.get(site.id);
+  const roseSvg = profile ? _exposureRoseSvg(profile, basin.wave_direction ?? null, basin.swell_wave_direction ?? null) : "";
+  rowEl.innerHTML = `
+    <div class="d-sea-state">
+      <span class="sea-dot sea-dot-${ss.level}"></span>
+      <span>${ss.label}</span>
+    </div>
+    <div class="d-rose-row">${roseSvg}
+      <span class="d-rose-caption">Model sea state + local exposure estimate — not a measurement.</span>
+    </div>`;
 }
 
 // ================================================================
@@ -1527,7 +1791,42 @@ function init() {
   initAddSite();
   loadUserSites();
 
+  _buildExposureCache();
   applyFilters();
 }
 
+// ---- PART E — Debug + validation spot-checks ----
+window.__exposureDebug = function(id) {
+  const profile = _exposureCache.get(id);
+  if (!profile) return { error: "No profile cached for " + id };
+  const site = SITES.find((s) => s.id === id) || POIS.find((p) => p.id === id);
+  if (!site) return { profile: Array.from(profile), error: "No site/POI with that id" };
+  const basin = _basinForSite(site) || (_wxData ? _worseBasin(_wxData.marWest, _wxData.marEast) : null);
+  if (!basin) return { profile: Array.from(profile), note: "No weather data loaded yet" };
+  const ss = siteSeaState(site, basin);
+  return { profile: Array.from(profile), factorW: ss.factorW, factorS: ss.factorS,
+           effective: ss.effective, level: ss.level, label: ss.label };
+};
+
 init();
+
+// Spot-checks run after init() so _exposureCache is populated.
+(function _runSpotChecks() {
+  // Synthetic basin: 1.0 m swell from 290° (NW), period 8 s.
+  const syn = { wave_height: 1.0, wave_direction: 290, wave_period: 8,
+                swell_wave_height: 0.5, swell_wave_direction: 290 };
+  const checks = [
+    { id: "pollara",       test: (f) => f >= 0.85, expect: "≥0.85 open NW (Salina, no landmass blocking NW fetch)" },
+    { id: "cala-zimmari",  test: (f) => f <= 0.40, expect: "≤0.40 sheltered NW (inside Panarea circle)"           },
+    { id: "dattilo",       test: (f) => f >= 0.85, expect: "≥0.85 small-obstacle + diffraction smear"             },
+    { id: "acque-calde",   test: (f) => f >= 0.40, expect: "≥0.40 (Vulcanello is NNE not NW — spec has geo error)" }
+  ];
+  checks.forEach(({ id, test, expect }) => {
+    const profile = _exposureCache.get(id);
+    const site    = SITES.find((s) => s.id === id);
+    if (!profile || !site) { console.warn(`[exposure] ${id}: missing from cache`); return; }
+    const ss = siteSeaState(site, syn);
+    const ok = ss.factorW != null && test(ss.factorW);
+    console.log(`[exposure] ${id}: factorW=${ss.factorW != null ? ss.factorW.toFixed(3) : "null"} eff=${ss.effective != null ? ss.effective.toFixed(2) : "null"} m  ${ok ? "✓" : "✗"}  (expect ${expect})`);
+  });
+})();

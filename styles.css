@@ -354,6 +354,31 @@ body {
 .approx-flag { font-size: .72rem; color: var(--mid); margin-top: 2px; }
 
 /* ================================================================
+   Sea state row + exposure rose (detail drawer)
+   ================================================================ */
+.d-sea-state {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 10px 12px; background: var(--panel);
+  border-radius: var(--r-md); font-size: .82rem; line-height: 1.5;
+  margin-bottom: 8px;
+}
+.sea-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  flex-shrink: 0; margin-top: 5px;
+}
+.sea-dot-calm     { background: #5ee0c6; }
+.sea-dot-moderate { background: #ffd76a; }
+.sea-dot-rough    { background: #e07046; }
+.sea-dot-unknown  { background: var(--ink-mute); }
+.d-rose-row {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 12px;
+}
+.d-rose-caption {
+  font-size: .68rem; color: var(--ink-mute); line-height: 1.4;
+}
+
+/* ================================================================
    Weather panel
    ================================================================ */
 .wx-refresh-btn {

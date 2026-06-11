@@ -818,3 +818,31 @@ const POIS = [
     notes: "Seafront hotel at Acquacalda with a roof terrace looking straight at Salina, Panarea and Stromboli. 4.4★. Great value and breakfast, but Acquacalda is remote (20 min from town, two restaurants, last bus ~8pm) — a base for peace, not nightlife. Beach loungers for guests directly opposite.",
     source: "Google Maps (verified)" }
 ];
+
+// ================================================================
+// LAND_MASSES — coarse circles for shadow / exposure computation.
+// Radii are effective half-widths, not exact coastlines. Each entry
+// is used by computeExposureProfile() in app.js via standard
+// ray–circle intersection. Fidelity upgrade path: swap circles for
+// 8-point polygons while keeping the same ray-cast interface
+// (point × bearing → blocking-distance | null); that swap is
+// contained in computeExposureProfile — nothing else needs to change.
+// ================================================================
+const LAND_MASSES = [
+  { name: "Lipari",            lat: 38.4750, lng: 14.9470, r: 4300 },
+  { name: "Salina",            lat: 38.5630, lng: 14.8400, r: 3400 },
+  { name: "Vulcano",           lat: 38.3960, lng: 14.9750, r: 3500 },
+  { name: "Vulcanello",        lat: 38.4260, lng: 14.9620, r: 1000 },
+  { name: "Panarea",           lat: 38.6340, lng: 15.0660, r: 1600 },
+  { name: "Stromboli",         lat: 38.7930, lng: 15.2130, r: 2100 },
+  { name: "Filicudi",          lat: 38.5670, lng: 14.5730, r: 2000 },
+  { name: "Alicudi",           lat: 38.5400, lng: 14.3530, r: 1400 },
+  { name: "Basiluzzo",         lat: 38.6637, lng: 15.1135, r: 350  },
+  { name: "Dattilo",           lat: 38.6395, lng: 15.0975, r: 160  },
+  { name: "Lisca Bianca",      lat: 38.6390, lng: 15.1120, r: 130  },
+  { name: "Bottaro",           lat: 38.6380, lng: 15.1103, r: 80   },
+  { name: "Strombolicchio",    lat: 38.8166, lng: 15.2523, r: 100  },
+  { name: "La Canna",          lat: 38.5816, lng: 14.5270, r: 60   },
+  { name: "Pietra del Bagno",  lat: 38.5036, lng: 14.8975, r: 70   },
+  { name: "Faraglioni Lipari", lat: 38.4386, lng: 14.9430, r: 90   }
+];
