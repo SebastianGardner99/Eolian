@@ -12,7 +12,7 @@ import { initializeApp }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {
   initializeFirestore, persistentLocalCache,
-  collection, addDoc, deleteDoc, doc,
+  collection, addDoc, deleteDoc, doc, setDoc,
   onSnapshot, serverTimestamp, query, orderBy
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import {
@@ -83,7 +83,36 @@ import { firebaseConfig } from './firebase-config.js';
         );
       }
 
-      window.AtlasSync = { uid: user.uid, addSite, deleteSite, onSitesChanged };
+      const ovCol = collection(db, 'atlas_position_overrides');
+
+      // last-write-wins via setDoc — concurrent edits from different group members
+      // resolve to whichever write reached Firestore last.
+      function setOverride(siteId, data) {
+        return setDoc(doc(db, 'atlas_position_overrides', siteId), {
+          lat:       Number(data.lat),
+          lng:       Number(data.lng),
+          author:    String(data.author ?? 'Anonymous').slice(0, 60),
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      }
+
+      function clearOverride(siteId) {
+        return deleteDoc(doc(db, 'atlas_position_overrides', siteId));
+      }
+
+      function onOverridesChanged(cb) {
+        onSnapshot(
+          ovCol,
+          { includeMetadataChanges: true },
+          (snap) => {
+            const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+            cb(docs, { hasPendingWrites: snap.docs.some((d) => d.metadata.hasPendingWrites) });
+          },
+          (err) => console.warn('[atlas-sync] Overrides snapshot error:', err.message)
+        );
+      }
+
+      window.AtlasSync = { uid: user.uid, addSite, deleteSite, onSitesChanged, setOverride, clearOverride, onOverridesChanged };
       window.dispatchEvent(new CustomEvent('atlassync:ready'));
     });
 

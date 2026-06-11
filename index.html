@@ -71,11 +71,6 @@
           <div class="types" id="layer-toggles"></div>
           <div class="layer-sep"></div>
           <label class="check"><input type="checkbox" id="tog-anchorages" /> <span>Boat anchorages</span><i class="dot anchor"></i></label>
-          <div id="community-layer-row" class="check" hidden>
-            <input type="checkbox" id="tog-community" checked />
-            <span>Community sites</span>
-            <span id="community-count" class="count community-count-badge">0</span>
-          </div>
           <button id="add-site-sb-btn" class="add-site-sb-toggle">✚ Add a site</button>
         </section>
 
@@ -207,6 +202,7 @@
 
   <!-- ============ DETAIL DRAWER ============ -->
   <div id="drawer" class="drawer" aria-hidden="true">
+    <div class="drawer-grabber" aria-hidden="true"></div>
     <div class="drawer-inner">
       <button id="drawer-close" class="drawer-close" aria-label="Close">×</button>
       <div id="drawer-body"></div>

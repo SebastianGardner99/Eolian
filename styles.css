@@ -415,16 +415,6 @@ body {
 .wx-cell-val   { font-size: .88rem; font-weight: 700; display: flex; align-items: center; gap: 5px; }
 .wx-cell-sub   { font-size: .65rem; color: var(--ink-mute); margin-top: 3px; }
 
-.wx-shelter { margin-bottom: 8px; }
-.wx-shelter-label { font-size: .68rem; font-weight: 600; color: var(--ink-mute); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 5px; }
-.wx-shelter-bay {
-  display: inline-block; font-size: .72rem; font-weight: 600;
-  background: rgba(94,224,198,.12); color: var(--shallow);
-  border: 1px solid rgba(94,224,198,.25); border-radius: 20px;
-  padding: 2px 9px; margin: 0 4px 4px 0;
-}
-.wx-shelter-none { font-size: .71rem; color: var(--ink-mute); font-style: italic; }
-
 .wx-updated { font-size: .65rem; color: var(--ink-mute); }
 
 /* ================================================================
@@ -1135,3 +1125,329 @@ select.ash-input { cursor: pointer; }
   cursor: pointer;
 }
 .nearby-refresh-btn:hover { background: var(--bg-3, #e5e7eb); }
+
+/* ================================================================
+   CHANGE 4: position-override indicator dot
+   ================================================================ */
+.pos-adjusted {
+  position: relative;
+}
+.pos-adjusted::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 7px;
+  height: 7px;
+  background: var(--anchor, #ffd76a);
+  border-radius: 50%;
+  border: 1.5px solid rgba(10,20,29,.85);
+  pointer-events: none;
+}
+
+/* ================================================================
+   CHANGE 5: iOS dark-mode design language
+   ================================================================ */
+
+/* ---- Root & typography overrides ---- */
+:root {
+  /* iOS system grey scale (dark) */
+  --ios-bg:       #000000;
+  --ios-bg1:      #1C1C1E;
+  --ios-bg2:      #2C2C2E;
+  --ios-bg3:      #3A3A3C;
+  --ios-sep:      rgba(255,255,255,0.12);
+  --ios-label:    #FFFFFF;
+  --ios-label2:   rgba(235,235,245,0.60);
+  --ios-label3:   rgba(235,235,245,0.30);
+  --ios-tint:     #5ee0c6;   /* keep teal as app tint */
+  --ios-blue:     #0A84FF;
+  --ios-green:    #30D158;
+  --ios-yellow:   #FFD60A;
+  --ios-red:      #FF453A;
+  --ios-r-card:   16px;
+  --ios-r-row:    10px;
+  --ios-blur:     blur(20px) saturate(1.4);
+  --ios-surface:  rgba(28,28,30,0.82);
+  /* remap semantic tokens to iOS greys */
+  --deep:   #1C1C1E;
+  --panel:  #2C2C2E;
+  --panel-2: #3A3A3C;
+  --line:   rgba(255,255,255,0.12);
+  --abyss:  #000000;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* ---- Sidebar surface ---- */
+#sidebar {
+  background: var(--ios-surface);
+  -webkit-backdrop-filter: var(--ios-blur);
+  backdrop-filter: var(--ios-blur);
+  border-right: 0.5px solid var(--ios-sep);
+}
+
+/* ---- Panel section headers (iOS grouped-list style) ---- */
+.panel-title {
+  font-size: .81rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--ios-label2);
+}
+
+/* ---- Panel separator ---- */
+.panel { border-bottom: 0.5px solid var(--ios-sep); }
+
+/* ---- Depth legend rows ---- */
+.leg-item {
+  background: var(--ios-bg2);
+  border: 0.5px solid var(--ios-sep);
+  border-radius: var(--ios-r-row);
+}
+
+/* ---- iOS switches for all checkboxes in .check ---- */
+.check input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 51px;
+  height: 31px;
+  border-radius: 16px;
+  background: var(--ios-bg3);
+  transition: background .22s;
+  flex-shrink: 0;
+  position: relative;
+  cursor: pointer;
+  margin: 0;
+}
+.check input[type="checkbox"]:checked {
+  background: #34C759;
+}
+.check input[type="checkbox"]::before {
+  content: '';
+  position: absolute;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #ffffff;
+  top: 2px;
+  left: 2px;
+  transition: transform .22s cubic-bezier(0.32,0.72,0,1);
+  box-shadow: 0 1px 4px rgba(0,0,0,.35);
+}
+.check input[type="checkbox"]:checked::before {
+  transform: translateX(20px);
+}
+
+/* ---- Type chips: pill/segmented-control style ---- */
+.type-chip {
+  border-radius: 20px;
+  background: var(--ios-bg2);
+  border: 0.5px solid var(--ios-sep);
+  font-size: .78rem;
+}
+
+/* ---- Site list rows ---- */
+.site-li {
+  background: var(--ios-bg2);
+  border: 0.5px solid var(--ios-sep);
+  border-radius: var(--ios-r-row);
+}
+
+/* ---- Wx cells ---- */
+.wx-cell {
+  background: var(--ios-bg2);
+  border: 0.5px solid var(--ios-sep);
+  border-radius: var(--ios-r-row);
+}
+
+/* ---- Weather verdict colours mapped to iOS palette ---- */
+.wx-verdict.good     { background: rgba(48,209,88,.14);  color: var(--ios-green); }
+.wx-verdict.marginal { background: rgba(255,214,10,.14); color: var(--ios-yellow); }
+.wx-verdict.poor     { background: rgba(255,69,58,.14);  color: var(--ios-red); }
+.wx-verdict.bad      { background: rgba(255,69,58,.20);  color: var(--ios-red); }
+
+/* ---- Primary filled button (iOS style) ---- */
+.ash-place-btn {
+  background: var(--ios-blue);
+  border-radius: 12px;
+  font-size: .9rem;
+  font-weight: 600;
+}
+
+/* ---- Destructive button (delete site) ---- */
+.d-delete-btn {
+  color: var(--ios-red);
+}
+.d-delete-btn:hover { color: #ff6961; }
+
+/* ---- Delete confirm button ---- */
+.d-delete-confirm-btn {
+  background: var(--ios-red);
+  border-radius: 10px;
+}
+.d-delete-confirm-btn:hover:not(:disabled) { background: #e03030; }
+
+/* ---- Floating panels (add-site HUD, drag banner, toasts) ---- */
+.add-site-hud {
+  background: var(--ios-surface);
+  -webkit-backdrop-filter: var(--ios-blur);
+  backdrop-filter: var(--ios-blur);
+  border: 0.5px solid var(--ios-sep);
+  border-radius: var(--ios-r-card);
+}
+
+.drag-banner {
+  background: var(--ios-surface);
+  -webkit-backdrop-filter: var(--ios-blur);
+  backdrop-filter: var(--ios-blur);
+  border: 0.5px solid var(--ios-sep);
+  border-radius: 20px;
+}
+
+/* ---- Detail drawer — bottom-sheet on mobile, side-sheet on desktop ---- */
+.drawer {
+  background: var(--ios-surface);
+  -webkit-backdrop-filter: var(--ios-blur);
+  backdrop-filter: var(--ios-blur);
+  border-left: 0.5px solid var(--ios-sep);
+  border-radius: 20px 0 0 20px;
+  /* spring-feel open transition */
+  transition: transform 300ms cubic-bezier(0.32,0.72,0,1),
+              opacity  300ms cubic-bezier(0.32,0.72,0,1);
+}
+
+/* Grabber handle */
+.drawer-grabber {
+  width: 36px;
+  height: 5px;
+  background: rgba(255,255,255,0.30);
+  border-radius: 3px;
+  margin: 10px auto 0;
+  flex-shrink: 0;
+  display: none; /* hidden on desktop; shown on mobile */
+}
+
+/* Mobile: slide up from bottom */
+@media (max-width: 820px) {
+  .drawer {
+    top: auto;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    max-height: 88vh;
+    height: auto;
+    border-radius: 20px 20px 0 0;
+    transform: translateY(110%);
+    overflow-y: auto;
+    border-left: none;
+    border-top: 0.5px solid var(--ios-sep);
+  }
+  .drawer.open { transform: translateY(0); }
+  .drawer-grabber { display: block; }
+}
+
+/* ---- Toast: iOS top-centre banner style ---- */
+.atlas-toast {
+  top: max(16px, env(safe-area-inset-top, 16px));
+  bottom: auto;
+  background: var(--ios-surface);
+  -webkit-backdrop-filter: var(--ios-blur);
+  backdrop-filter: var(--ios-blur);
+  border: 0.5px solid var(--ios-sep);
+  color: var(--ios-label);
+  transform: translateX(-50%) translateY(-80px);
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.45);
+  transition: transform 280ms cubic-bezier(0.32,0.72,0,1),
+              opacity   280ms linear;
+}
+.atlas-toast--show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* ---- D-section headers: iOS grouped-list style ---- */
+.d-section-h {
+  font-size: .81rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--ios-label2);
+}
+
+/* ---- D-table hairlines ---- */
+.d-table th, .d-table td {
+  border-bottom: 0.5px solid var(--ios-sep);
+}
+
+/* ---- D-prox card ---- */
+.d-prox {
+  background: var(--ios-bg2);
+  border: 0.5px solid var(--ios-sep);
+  border-radius: var(--ios-r-card);
+}
+
+/* ---- Leaflet popup surface ---- */
+.leaflet-popup-content-wrapper {
+  background: var(--ios-surface);
+  -webkit-backdrop-filter: var(--ios-blur);
+  backdrop-filter: var(--ios-blur);
+  border: 0.5px solid var(--ios-sep);
+  border-radius: var(--ios-r-card);
+}
+.leaflet-popup-tip { background: var(--ios-bg2); }
+
+/* ---- Wx timeline bar ---- */
+.wx-timeline {
+  background: var(--ios-surface);
+  -webkit-backdrop-filter: var(--ios-blur);
+  backdrop-filter: var(--ios-blur);
+  border-top: 0.5px solid var(--ios-sep);
+}
+
+/* ---- Wx top bar ---- */
+.wx-top-bar {
+  background: var(--ios-surface);
+  -webkit-backdrop-filter: var(--ios-blur);
+  backdrop-filter: var(--ios-blur);
+  border: 0.5px solid var(--ios-sep);
+  border-radius: var(--ios-r-card);
+}
+
+/* ---- Author modal surface ---- */
+.author-modal-inner {
+  background: var(--ios-bg2);
+  -webkit-backdrop-filter: var(--ios-blur);
+  backdrop-filter: var(--ios-blur);
+  border: 0.5px solid var(--ios-sep);
+  border-radius: var(--ios-r-card);
+}
+
+/* ---- Segmented controls ---- */
+.seg {
+  background: var(--ios-bg2);
+  border: 0.5px solid var(--ios-sep);
+  border-radius: 10px;
+}
+.seg-btn.active {
+  background: var(--ios-tint);
+  color: #031c17;
+}
+
+/* ---- Nearby panel rows ---- */
+.nearby-item:hover, .nearby-item:focus {
+  background: var(--ios-bg2);
+}
+
+/* ---- Prefers-reduced-motion: disable spring + slide ---- */
+@media (prefers-reduced-motion: reduce) {
+  .drawer { transition: none; }
+  .atlas-toast { transition: opacity 150ms linear; }
+  .check input[type="checkbox"],
+  .check input[type="checkbox"]::before { transition: none; }
+}

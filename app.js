@@ -113,6 +113,7 @@ const poiLayer       = L.markerClusterGroup({
 // Keep marker refs by id for list<->map interaction
 const markerById    = {};
 const poiMarkerById = {};
+const _posOverrides = new Map();  // siteId/poiId/communityId → {lat,lng,author,updatedAt}
 
 // ---- Helpers ----
 function haversine(lat1, lng1, lat2, lng2) {
@@ -156,13 +157,13 @@ SITES.forEach((s) => {
 });
 
 // ---- Marker rendering ----
-function depthIcon(site, dragging = false) {
+function depthIcon(site, dragging = false, adjusted = false) {
   const color = DEPTH_BANDS[site._band].color;
   const glyph = FEATURE_TYPES[site.type].glyph;
   const size  = 26;
   return L.divIcon({
     className: "",
-    html: `<div class="depth-marker${dragging ? " drag-active" : ""}" style="--mk:${color}">
+    html: `<div class="depth-marker${dragging ? " drag-active" : ""}${adjusted ? " pos-adjusted" : ""}" style="--mk:${color}">
              <span class="mk-glyph">${glyph}</span>
            </div>`,
     iconSize:    [size, size],
@@ -202,8 +203,9 @@ function buildSiteMarkers() {
   for (const id in markerById) delete markerById[id];
 
   SITES.forEach((site) => {
-    const m = L.marker([site.lat, site.lng], {
-      icon:  depthIcon(site),
+    const ovr = _posOverrides.get(site.id);
+    const m = L.marker([ovr?.lat ?? site.lat, ovr?.lng ?? site.lng], {
+      icon:  depthIcon(site, false, !!ovr),
       title: site.name
     });
     m.bindPopup(popupHtml(site), { maxWidth: 280 });
@@ -234,11 +236,11 @@ function buildAnchorages() {
 }
 
 // ---- Travel-tip POIs ----
-function poiIcon(poi) {
+function poiIcon(poi, adjusted = false) {
   const pt = POI_TYPES[poi.type];
   return L.divIcon({
     className: "",
-    html: `<div class="poi-marker" style="--pt:${pt.color}">${pt.glyph}</div>`,
+    html: `<div class="poi-marker${adjusted ? " pos-adjusted" : ""}" style="--pt:${pt.color}">${pt.glyph}</div>`,
     iconSize: [28, 28],
     iconAnchor: [14, 14],
     popupAnchor: [0, -14]
@@ -260,8 +262,9 @@ function buildPois() {
   for (const id in poiMarkerById) delete poiMarkerById[id];
   POIS.forEach((poi) => {
     if (poi.type === "island") return; // island overviews not rendered on map
-    const m = L.marker([poi.lat, poi.lng], {
-      icon: poiIcon(poi),
+    const ovr = _posOverrides.get(poi.id);
+    const m = L.marker([ovr?.lat ?? poi.lat, ovr?.lng ?? poi.lng], {
+      icon: poiIcon(poi, !!ovr),
       title: poi.name
     });
     m.bindPopup(poiPopupHtml(poi), { maxWidth: 300 });
@@ -454,8 +457,30 @@ function confirmDrag() {
   commitNewCoords(site, lat, lng);
   exitDragMode();
 
-  // Show a toast with copyable coordinates
-  showDragToast(site, lat, lng);
+  function _shareOverride() {
+    if (!window.AtlasSync?.setOverride) {
+      // Firebase not ready — position saved locally for this session only
+      _toast("Offline — position change won't be shared until reload with connection");
+      showDragToast(site, lat, lng);
+      return;
+    }
+    const author = localStorage.getItem("atlas_author") || "Anonymous";
+    window.AtlasSync.setOverride(site.id, { lat, lng, author })
+      .then(() => {
+        if (!navigator.onLine) {
+          _toast("Saved — will sync when back online");
+        } else {
+          _toast("Position update shared");
+        }
+      })
+      .catch((err) => _toast("Override failed: " + err.message));
+  }
+
+  if (window.AtlasSync && !localStorage.getItem("atlas_author")) {
+    _showAuthorModal(_shareOverride);
+  } else {
+    _shareOverride();
+  }
 }
 
 function cancelDrag() {
@@ -578,6 +603,13 @@ function openDrawer(id) {
         ${site.approx
           ? '<div class="approx-flag">⚠ Approximate — derived from the cove/cape (±0.2–1 km)</div>'
           : '<div class="approx-flag" style="color:var(--swim)">✓ Precise</div>'}</td></tr>
+      ${_posOverrides.has(site.id) ? (() => {
+          const ovr = _posOverrides.get(site.id);
+          return `<tr id="d-override-row"><th>Position</th><td>
+            Adjusted by <strong>${ovr.author}</strong> · ${_relTime(ovr.updatedAt)}
+            <button class="pop-btn" id="d-reset-pos-btn">Reset to original</button>
+          </td></tr>`;
+        })() : ""}
     </table>
 
     <div class="d-section-h">Sources</div>
@@ -596,6 +628,14 @@ function openDrawer(id) {
     </div>` : ""}
   `;
   document.getElementById("drawer-body").innerHTML = body;
+  const resetPosBtn = document.getElementById("d-reset-pos-btn");
+  if (resetPosBtn) {
+    resetPosBtn.addEventListener("click", () => {
+      window.AtlasSync?.clearOverride(site.id)
+        .then(() => _toast("Position reset"))
+        .catch((err) => _toast("Reset failed: " + err.message));
+    });
+  }
   _renderSiteSeaStateRow(site);
   if (_wxFetchTime && Date.now() - _wxFetchTime > 60 * 60 * 1000) {
     fetchWeather().then((d) => {
@@ -844,7 +884,7 @@ function degToCompass(deg) {
   return dirs[Math.round(deg / 22.5) % 16];
 }
 
-// Shared angular helpers — used by shelterAnalysis() and siteSeaState().
+// Angular helpers used by the per-site exposure engine and siteSeaState().
 function _bearingBin(deg) {
   if (deg == null) return 0;
   return Math.round(((deg % 360) + 360) % 360 / 5) % 72;
@@ -852,16 +892,6 @@ function _bearingBin(deg) {
 function _angleDiff(a, b) {
   const d = Math.abs(a - b) % 360;
   return d > 180 ? 360 - d : d;
-}
-
-function shelterAnalysis(windDeg) {
-  if (windDeg == null || !ANCHORAGES) return [];
-  const sheltered = [];
-  ANCHORAGES.forEach((a) => {
-    if (a.openBearing == null) return;
-    if (_angleDiff(a.openBearing, windDeg) > 90) sheltered.push(a.name);
-  });
-  return sheltered;
 }
 
 async function fetchWeather() {
@@ -915,14 +945,9 @@ function renderWeather(data) {
   const swellM     = mar.swell_wave_height    ?? null;
   const swellDir   = mar.swell_wave_direction ?? null;
 
-  const bf        = beaufortLabel(windKnots);
-  const verdict   = snorkelVerdict(windKnots, waveM);
-  const sheltered = shelterAnalysis(windDir);
-  const now = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-
-  const shelterHtml = sheltered.length
-    ? `<div class="wx-shelter-label">Sheltered bays now</div>${sheltered.map((n) => `<span class="wx-shelter-bay">${n}</span>`).join("")}`
-    : `<div class="wx-shelter-none">Add <code>openBearing</code> to anchorages in data.js to enable shelter analysis.</div>`;
+  const bf      = beaufortLabel(windKnots);
+  const verdict = snorkelVerdict(windKnots, waveM);
+  const now     = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
   const waveFmt  = waveM      != null ? waveM.toFixed(1) + " m"       : "—";
   const swellFmt = swellM     != null ? swellM.toFixed(1) + " m"      : "—";
@@ -948,7 +973,6 @@ function renderWeather(data) {
         <div class="wx-cell-sub">${degToCompass(swellDir)}</div>
       </div>
     </div>
-    <div class="wx-shelter">${shelterHtml}</div>
     <div class="wx-updated">Updated ${now}</div>
   `;
 
@@ -1495,7 +1519,6 @@ let   _userSites         = [];
 let   _addSitePlacing    = false;
 let   _addSitePlaceClean = null;        // cleanup fn for placement mode
 let   _onUserSitesChanged = null;       // hook called after each save
-let   _refreshExportBtn  = null;        // assigned in initAddSite, also called by community sync
 
 function loadUserSites() {
   try { _userSites = JSON.parse(localStorage.getItem(_USER_SITES_KEY) || "[]"); }
@@ -1759,28 +1782,6 @@ function initAddSite() {
     _showAuthorModal(null);
   });
 
-  // Export button — community sites from Firestore (repurposed from local export)
-  _refreshExportBtn = function() {
-    const existing = document.getElementById("user-sites-export-btn");
-    const count    = _communityDocs.length;
-    if (count > 0 && !existing) {
-      const btn = document.createElement("button");
-      btn.id        = "user-sites-export-btn";
-      btn.className = "add-site-sb-toggle";
-      btn.style.cssText = "margin-top:4px;border-color:rgba(99,179,237,.4);color:#2b6cb0;";
-      btn.title = "Download community-added sites formatted for paste into data.js";
-      btn.addEventListener("click", exportCommunitySites);
-      document.getElementById("add-site-sb-btn").insertAdjacentElement("afterend", btn);
-    }
-    if (existing || count > 0) {
-      const el = document.getElementById("user-sites-export-btn");
-      if (el) el.textContent = `↓ Export ${count} community site${count === 1 ? "" : "s"} as JS`;
-    }
-    const el = document.getElementById("user-sites-export-btn");
-    if (el && count === 0) el.remove();
-  };
-
-  _onUserSitesChanged = _refreshExportBtn;
   _updateAddSiteHudFirebaseState();
 }
 
@@ -1790,7 +1791,7 @@ function initAddSite() {
 
 let _communityLayer     = null;              // L.layerGroup, created in _initFirebaseSync
 const _communityMarkers = new Map();         // docId → Leaflet marker
-let   _communityDocs    = [];                // latest snapshot, used for export
+let   _communityDocs    = [];
 const _seenCommunityIds = new Set();         // tracks known doc IDs for new-pin toasts
 let   _firebaseReady    = false;
 let   _openCommunityDocId = null;            // id of the community doc currently in the drawer
@@ -1885,10 +1886,11 @@ function _showAuthorModal(onSave) {
 // ---- Community marker ----
 function _buildCommunityMarker(doc) {
   const { glyph, color } = _userSiteIconInfo(doc);
-  const m = L.marker([doc.lat, doc.lng], {
+  const ovr = _posOverrides.get(doc.id);
+  const m = L.marker([ovr?.lat ?? doc.lat, ovr?.lng ?? doc.lng], {
     icon: L.divIcon({
       className: "",
-      html: `<div class="depth-marker community-site-marker" style="--mk:${color}">
+      html: `<div class="depth-marker community-site-marker${ovr ? " pos-adjusted" : ""}" style="--mk:${color}">
                <span class="mk-glyph">${glyph}</span>
              </div>`,
       iconSize: [26, 26], iconAnchor: [13, 13]
@@ -1957,12 +1959,27 @@ function openCommunityDrawer(id) {
       ${cdoc.notes  ? `<tr><th>Notes</th><td>${cdoc.notes}</td></tr>` : ""}
       <tr><th>Coordinates</th><td>${cdoc.lat.toFixed(4)}°N, ${cdoc.lng.toFixed(4)}°E
         <div class="approx-flag">Community-added — verify before visiting</div></td></tr>
+      ${_posOverrides.has(cdoc.id) ? (() => {
+          const ovr = _posOverrides.get(cdoc.id);
+          return `<tr id="d-override-row"><th>Position</th><td>
+            Adjusted by <strong>${ovr.author}</strong> · ${_relTime(ovr.updatedAt)}
+            <button class="pop-btn" id="d-reset-pos-btn">Reset to original</button>
+          </td></tr>`;
+        })() : ""}
     </table>
     ${isOwner ? `<div id="d-delete-section" class="d-delete-section">
       <button id="d-delete-btn" class="d-delete-btn" type="button">Delete this site</button>
     </div>` : ""}`;
 
   document.getElementById("drawer-body").innerHTML = body;
+  const resetPosBtnC = document.getElementById("d-reset-pos-btn");
+  if (resetPosBtnC) {
+    resetPosBtnC.addEventListener("click", () => {
+      window.AtlasSync?.clearOverride(cdoc.id)
+        .then(() => _toast("Position reset"))
+        .catch((err) => _toast("Reset failed: " + err.message));
+    });
+  }
   if (isOwner) _wireDeleteSection(cdoc);
 
   const drawer = document.getElementById("drawer");
@@ -2008,52 +2025,6 @@ function _wireDeleteSection(cdoc) {
     });
   }
   bind();
-}
-
-// ---- Export community sites formatted for data.js ----
-function _formatCommunitySiteAsCode(doc) {
-  const isWater = !!FEATURE_TYPES[doc.type];
-  const typeVal = doc.type === "other" ? (doc.otherType || "attraction") : doc.type;
-  const dateStr = doc.createdAt?.toDate
-    ? doc.createdAt.toDate().toLocaleDateString("en-GB")
-    : "unknown date";
-  const source  = `Community — ${doc.author}, ${dateStr}`;
-  const ind     = "  ";
-  if (isWater) {
-    return `${ind}{ id: "community-${doc.id}", name: ${JSON.stringify(doc.name)}, island: ${JSON.stringify(doc.island || "Aeolian Islands")},\n` +
-      `${ind}  lat: ${doc.lat.toFixed(6)}, lng: ${doc.lng.toFixed(6)}, approx: true,\n` +
-      `${ind}  type: ${JSON.stringify(typeVal)}, depth: ${doc.depth || 5}, depthText: "— community-added",\n` +
-      `${ind}  access: ${JSON.stringify(doc.access || "shore")}, anchorage: "",\n` +
-      `${ind}  see: "", notes: ${JSON.stringify(doc.notes || "")},\n` +
-      `${ind}  desc: ${JSON.stringify(doc.notes || doc.name)},\n` +
-      `${ind}  sources: [[${JSON.stringify(source)}, ""]] },`;
-  }
-  return `${ind}{ id: "community-${doc.id}", name: ${JSON.stringify(doc.name)}, island: ${JSON.stringify(doc.island || "Aeolian Islands")},\n` +
-    `${ind}  lat: ${doc.lat.toFixed(6)}, lng: ${doc.lng.toFixed(6)}, type: ${JSON.stringify(typeVal)},\n` +
-    `${ind}  notes: ${JSON.stringify(doc.notes || "")}, source: ${JSON.stringify(source)} },`;
-}
-
-function exportCommunitySites() {
-  if (!_communityDocs.length) return;
-  const water = _communityDocs.filter((d) => FEATURE_TYPES[d.type]);
-  const pois  = _communityDocs.filter((d) => !FEATURE_TYPES[d.type]);
-  let out = "// ---- Community-added sites — paste into data.js ----\n";
-  out += "// Firestore doc IDs (for adoption tracking / future moderation):\n";
-  out += _communityDocs.map((d) => `//   ${d.id}  "${d.name}" — ${d.author}`).join("\n") + "\n\n";
-  if (water.length) {
-    out += "// Add to the SITES array:\n";
-    out += water.map(_formatCommunitySiteAsCode).join("\n") + "\n\n";
-  }
-  if (pois.length) {
-    out += "// Add to the POIS array:\n";
-    out += pois.map(_formatCommunitySiteAsCode).join("\n") + "\n";
-  }
-  const blob = new Blob([out], { type: "text/javascript" });
-  const a    = document.createElement("a");
-  a.href     = URL.createObjectURL(blob);
-  a.download = "community-sites.js";
-  a.click();
-  URL.revokeObjectURL(a.href);
 }
 
 // ---- Snapshot handler ----
@@ -2105,26 +2076,65 @@ function _onCommunitySnapshot(docs, meta) {
   }
   valid.forEach((doc) => _seenCommunityIds.add(doc.id));
 
-  // Refresh export button
-  if (_refreshExportBtn) _refreshExportBtn();
+}
+
+// ---- Position overrides (shared drag repositioning) ----
+function _applyOverrideToMarker(ovr) {
+  const m = markerById[ovr.id] || poiMarkerById[ovr.id] || _communityMarkers.get(ovr.id);
+  if (!m) return;
+  m.setLatLng([ovr.lat, ovr.lng]);
+  const site = SITES.find((s) => s.id === ovr.id);
+  if (site) { m.setIcon(depthIcon(site, false, true)); return; }
+  const poi = POIS.find((p) => p.id === ovr.id);
+  if (poi) { m.setIcon(poiIcon(poi, true)); }
+  // community markers: position updated; icon class is in markup, won't auto-update after build
+}
+
+function _restoreMarkerToOriginal(id) {
+  const m = markerById[id] || poiMarkerById[id] || _communityMarkers.get(id);
+  if (!m) return;
+  const site = SITES.find((s) => s.id === id);
+  if (site) { m.setLatLng([site.lat, site.lng]); m.setIcon(depthIcon(site, false, false)); return; }
+  const poi = POIS.find((p) => p.id === id);
+  if (poi) { m.setLatLng([poi.lat, poi.lng]); m.setIcon(poiIcon(poi, false)); return; }
+  const cdoc = _communityDocs.find((d) => d.id === id);
+  if (cdoc) m.setLatLng([cdoc.lat, cdoc.lng]);
+}
+
+function _onOverridesSnapshot(docs, meta) {
+  // Remove overrides that have been cleared (deleted from Firestore)
+  const incomingIds = new Set(docs.map((d) => d.id));
+  _posOverrides.forEach((_, id) => {
+    if (!incomingIds.has(id)) {
+      _posOverrides.delete(id);
+      _restoreMarkerToOriginal(id);
+    }
+  });
+
+  // Apply new or updated overrides
+  docs.forEach((d) => {
+    if (typeof d.lat !== "number" || typeof d.lng !== "number") return;
+    _posOverrides.set(d.id, d);
+    _applyOverrideToMarker(d);
+  });
+
+  if (meta.hasPendingWrites) _toast("Saved — will sync when back online");
+}
+
+function _initOverridesSync() {
+  if (window.AtlasSync?.onOverridesChanged) {
+    window.AtlasSync.onOverridesChanged(_onOverridesSnapshot);
+  }
 }
 
 // ---- Firebase sync init (called once AtlasSync is ready) ----
 function _initFirebaseSync() {
-  _firebaseReady    = true;
-  _communityLayer   = L.layerGroup().addTo(map);
-
-  // Community layer toggle
-  const row = document.getElementById("community-layer-row");
-  if (row) row.hidden = false;
-  const tog = document.getElementById("tog-community");
-  if (tog) tog.addEventListener("change", (e) => {
-    if (e.target.checked) _communityLayer.addTo(map);
-    else                  map.removeLayer(_communityLayer);
-  });
+  _firebaseReady  = true;
+  _communityLayer = L.layerGroup().addTo(map);
 
   // Register snapshot listener
   window.AtlasSync.onSitesChanged(_onCommunitySnapshot);
+  _initOverridesSync();
 
   // Update HUD state (enable place button, show author row)
   _updateAddSiteHudFirebaseState();
@@ -2194,8 +2204,7 @@ function _nearbyItems(fromLat, fromLng) {
     });
   });
 
-  const communityTog = document.getElementById("tog-community");
-  if (!communityTog || communityTog.checked) {
+  {
     _communityDocs.forEach((cdoc) => {
       const ft = FEATURE_TYPES[cdoc.type] || POI_TYPES[cdoc.type];
       candidates.push({
