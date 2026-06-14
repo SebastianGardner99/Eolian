@@ -212,10 +212,16 @@
 
   <!-- ============ DETAIL DRAWER ============ -->
   <div id="drawer" class="drawer" aria-hidden="true">
-    <div class="drawer-grabber" aria-hidden="true"></div>
-    <div class="drawer-inner">
+    <!-- Pinned header: grabber + close stay fixed while body scrolls on mobile -->
+    <div class="drawer-header">
+      <div class="drawer-grabber" aria-hidden="true"></div>
       <button id="drawer-close" class="drawer-close" aria-label="Close">×</button>
-      <div id="drawer-body"></div>
+    </div>
+    <!-- Scrollable body -->
+    <div class="drawer-scroll">
+      <div class="drawer-inner">
+        <div id="drawer-body"></div>
+      </div>
     </div>
   </div>
   <div id="drawer-scrim" class="drawer-scrim" hidden></div>
