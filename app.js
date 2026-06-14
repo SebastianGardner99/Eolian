@@ -2866,16 +2866,18 @@ function _initDrawerSwipe() {
 
   grabber.addEventListener("touchstart", (e) => {
     if (!drawer.classList.contains("open")) return;
+    e.preventDefault(); // block text-selection on drag start
     _dy0 = e.touches[0].clientY;
     _dragging = true;
     drawer.style.transition = "none";
-  }, { passive: true });
+  }, { passive: false }); // non-passive so preventDefault is honoured
 
   document.addEventListener("touchmove", (e) => {
     if (!_dragging) return;
+    e.preventDefault(); // block scroll and selection while sheet is being dragged
     const dy = Math.max(0, e.touches[0].clientY - _dy0);
     drawer.style.transform = `translateY(${dy}px)`;
-  }, { passive: true });
+  }, { passive: false }); // non-passive so preventDefault is honoured
 
   document.addEventListener("touchend", (e) => {
     if (!_dragging) return;

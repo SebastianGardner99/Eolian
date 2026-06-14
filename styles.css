@@ -1366,42 +1366,57 @@ body {
     height: auto;
     border-radius: 20px 20px 0 0;
     transform: translateY(110%);
-    /* overflow moves to .drawer-scroll so the pinned header is excluded */
     overflow: hidden;
     display: flex;
     flex-direction: column;
     border-left: none;
     border-top: 0.5px solid var(--ios-sep);
+    -webkit-user-select: none;
+    user-select: none;
   }
   .drawer.open { transform: translateY(0); }
 
-  /* Pinned header strip: grabber + close button */
+  /* Pinned header: transparent so the sheet reads as one continuous surface.
+     backdrop-filter frosts scrolled content as it passes underneath. */
   .drawer-header {
     flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 44px;
-    background: var(--ios-surface);
+    height: 44px;          /* compact, exactly one touch-target tall */
+    background: transparent;
     -webkit-backdrop-filter: var(--ios-blur);
     backdrop-filter: var(--ios-blur);
+    border-bottom: 0.5px solid var(--ios-sep);
     z-index: 2;
+    -webkit-user-select: none;
+    user-select: none;
   }
-  /* Grabber sits inside the flex header — remove the top margin used in the old layout */
+
+  /* Grabber centred in header row; clear the free-standing top margin */
   .drawer-grabber { display: block; margin: 0; }
 
-  /* Close button centred vertically in the header strip */
-  .drawer-close { top: 50%; right: 12px; transform: translateY(-50%); }
+  /* iOS-style circular close button: ~30px visual inside the 44px header */
+  .drawer-close {
+    position: absolute; top: 50%; right: 12px; transform: translateY(-50%);
+    background: rgba(255,255,255,.10);
+    border: 0.5px solid var(--ios-sep);
+    border-radius: 50%;
+    color: var(--ios-label2);
+    font-size: 1.1rem;
+    display: flex; align-items: center; justify-content: center;
+  }
 
-  /* Scrollable content area */
+  /* Scrollable body — first content close beneath the header */
   .drawer-scroll {
     flex: 1;
     overflow-y: auto;
     overscroll-behavior: contain;
-    min-height: 0; /* required for flex + overflow to work correctly */
+    min-height: 0;
   }
+  .drawer-inner { padding: 12px 20px 40px; }
 
-  /* Bug 1: push Leaflet top-right controls below the wx-chip */
+  /* Push Leaflet top-right controls below the wx-chip */
   .leaflet-top.leaflet-right {
     top: calc(max(14px, env(safe-area-inset-top, 0px)) + 44px);
   }
