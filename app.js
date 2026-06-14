@@ -3,7 +3,7 @@
 // Application logic (catamaran edition)
 // ============================================================
 // ---- Build ----
-const BUILD = "2026-06-11-1";
+const BUILD = "2026-06-14-1";
 
 // ---- State ----
 const state = {
@@ -1190,6 +1190,21 @@ function renderWeather(data) {
   _wxFetchTime = Date.now();
   if (document.getElementById("tog-wind-overlay").checked) startWindAnimation();
   initForecast(data.forecast);
+  _updateWxChip();
+}
+
+function _updateWxChip() {
+  const chip = document.getElementById("wx-chip");
+  if (!chip || !matchMedia("(max-width: 820px)").matches) return;
+  const wx = _wxData?.wx;
+  if (!wx) { chip.hidden = true; return; }
+  const kn  = Math.round(wx.wind_speed_10m ?? 0);
+  const dir = degToCompass(wx.wind_direction_10m);
+  const mar = _worseBasin(_wxData.marWest, _wxData.marEast);
+  const waveM = mar.wave_height ?? null;
+  const waveStr = waveM != null ? ` · ${waveM.toFixed(1)} m` : "";
+  chip.textContent = `${dir} ${kn} kn${waveStr}`;
+  chip.hidden = false;
 }
 
 function buildWindArrows(d) {
@@ -2769,6 +2784,130 @@ function initSW() {
 }
 
 // ================================================================
+// ---- Mobile overlay: sidebar scrim + swipe gestures ----
+function _initSidebarOverlay() {
+  if (!matchMedia("(max-width: 820px)").matches) return;
+  const app     = document.getElementById("app");
+  const scrim   = document.getElementById("sidebar-scrim");
+  const sidebar = document.getElementById("sidebar");
+  const mapWrap = document.getElementById("map-wrap");
+
+  function _showSbScrim() {
+    scrim.hidden = false;
+    requestAnimationFrame(() => scrim.classList.add("show"));
+  }
+  function _hideSbScrim() {
+    scrim.classList.remove("show");
+    scrim.addEventListener("transitionend", () => { scrim.hidden = true; }, { once: true });
+  }
+
+  // Augment existing #sb-open / #sb-toggle click handlers with scrim management
+  document.getElementById("sb-open").addEventListener("click", _showSbScrim);
+  document.getElementById("sb-toggle").addEventListener("click", _hideSbScrim);
+
+  // Conditions chip → open sidebar
+  const wxChip = document.getElementById("wx-chip");
+  if (wxChip) {
+    wxChip.addEventListener("click", () => {
+      app.classList.remove("sb-collapsed");
+      _showSbScrim();
+    });
+  }
+
+  // Tap scrim to close sidebar
+  scrim.addEventListener("click", () => {
+    app.classList.add("sb-collapsed");
+    _hideSbScrim();
+  });
+
+  // Swipe left on sidebar to close
+  let _sx0 = 0, _sy0 = 0;
+  sidebar.addEventListener("touchstart", (e) => {
+    _sx0 = e.touches[0].clientX;
+    _sy0 = e.touches[0].clientY;
+  }, { passive: true });
+  sidebar.addEventListener("touchend", (e) => {
+    const dx = e.changedTouches[0].clientX - _sx0;
+    const dy = Math.abs(e.changedTouches[0].clientY - _sy0);
+    if (dx < -50 && dy < 80) {
+      app.classList.add("sb-collapsed");
+      _hideSbScrim();
+    }
+  }, { passive: true });
+
+  // Swipe right from left edge (≤20 px) to open sidebar
+  let _ex0 = 0, _ey0 = 0, _edgeActive = false;
+  mapWrap.addEventListener("touchstart", (e) => {
+    _ex0 = e.touches[0].clientX;
+    _ey0 = e.touches[0].clientY;
+    _edgeActive = _ex0 < 20;
+  }, { passive: true });
+  mapWrap.addEventListener("touchend", (e) => {
+    if (!_edgeActive) return;
+    _edgeActive = false;
+    const dx = e.changedTouches[0].clientX - _ex0;
+    const dy = Math.abs(e.changedTouches[0].clientY - _ey0);
+    if (dx > 50 && dy < 80) {
+      app.classList.remove("sb-collapsed");
+      _showSbScrim();
+    }
+  }, { passive: true });
+}
+
+// ---- Mobile bottom-sheet swipe-to-dismiss ----
+function _initDrawerSwipe() {
+  if (!matchMedia("(max-width: 820px)").matches) return;
+  const drawer  = document.getElementById("drawer");
+  const grabber = drawer.querySelector(".drawer-grabber");
+  if (!grabber) return;
+
+  const SPRING = "transform 300ms cubic-bezier(0.32,0.72,0,1)";
+  let _dy0 = 0, _dragging = false;
+
+  grabber.addEventListener("touchstart", (e) => {
+    if (!drawer.classList.contains("open")) return;
+    _dy0 = e.touches[0].clientY;
+    _dragging = true;
+    drawer.style.transition = "none";
+  }, { passive: true });
+
+  document.addEventListener("touchmove", (e) => {
+    if (!_dragging) return;
+    const dy = Math.max(0, e.touches[0].clientY - _dy0);
+    drawer.style.transform = `translateY(${dy}px)`;
+  }, { passive: true });
+
+  document.addEventListener("touchend", (e) => {
+    if (!_dragging) return;
+    _dragging = false;
+    const dy = Math.max(0, e.changedTouches[0].clientY - _dy0);
+    const THRESHOLD = Math.min(120, drawer.offsetHeight * 0.3);
+
+    if (dy > THRESHOLD) {
+      // Animate fully out, then clean up state
+      const dscrim = document.getElementById("drawer-scrim");
+      dscrim.classList.remove("show");
+      drawer.style.transition = SPRING;
+      drawer.style.transform  = "translateY(110%)";
+      drawer.addEventListener("transitionend", () => {
+        drawer.style.transition = "";
+        drawer.style.transform  = "";
+        drawer.classList.remove("open");
+        dscrim.hidden = true;
+      }, { once: true });
+    } else {
+      // Spring back to fully open
+      drawer.style.transition = SPRING;
+      drawer.style.transform  = "translateY(0)";
+      drawer.addEventListener("transitionend", () => {
+        drawer.style.transition = "";
+        drawer.style.transform  = "";
+      }, { once: true });
+    }
+  }, { passive: true });
+}
+
+// ================================================================
 // ---- Init ----
 function init() {
   console.info("Atlas build", BUILD);
@@ -2859,6 +2998,13 @@ function init() {
   initOffline();
   initPreCache();
   initSW();
+
+  // Collapse sidebar on mobile startup (home-screen PWA lands on map)
+  if (matchMedia("(max-width: 820px)").matches) {
+    document.getElementById("app").classList.add("sb-collapsed");
+  }
+  _initSidebarOverlay();
+  _initDrawerSwipe();
 
   _buildExposureCache();
   applyFilters();
